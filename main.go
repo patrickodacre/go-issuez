@@ -9,14 +9,22 @@ import (
 	"path/filepath"
 	"strings"
 
+	"database/sql"
 	"github.com/julienschmidt/httprouter"
+	_ "github.com/lib/pq"
 )
 
 var tpls *template.Template
+var db *sql.DB
 
 type user struct {
-	Name string
-	Email string
+	ID        int64
+	Name      string
+	Username  string
+	Email     string
+	CreatedAt string
+	UpdatedAt string
+	LastLogin string
 }
 
 func main() {
@@ -25,16 +33,57 @@ func main() {
 
 	tpls, _ := findAndParseTemplates("templates", templateFuncs)
 
+	for _, tpl := range tpls.Templates() {
+
+		log.Println("tpl", tpl.Name())
+	}
+
+	db, err := sql.Open("postgres", "postgres://postgres:secret@172.17.0.2/postgres?sslmode=disable")
+
+	if err != nil {
+		log.Fatalln("Could not connect to db", err)
+	}
+
 	router := httprouter.New()
 
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		tpls.ExecuteTemplate(w, "index.gohtml", nil)
 	})
 
-	router.GET("/users/:id", func (w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	router.DELETE("/users/:id", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		user_id := ps.ByName("id")
+
+		stmt, e1 := db.Prepare(`DELETE from goissuez.users WHERE id = $1`)
+
+		if e1 != nil {
+			log.Println("Error deleting user ", user_id, e1)
+		}
+
+		defer stmt.Close()
+
+		_, e2 := stmt.Exec(user_id)
+
+		if e2 != nil {
+			log.Println("Failed to delete user.", e2)
+		}
+
+		// rowsAffected, e3 := result.RowsAffected()
+
+		// if e3 != nil || rowsAffected == 0 {
+			// log.Println("Failed to delete user.", e2)
+		// }
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte("Success"))
+	})
+
+	router.GET("/users/:id", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 		// /users/new - register a new user
-		if id := ps.ByName("id"); id == "new" {
+		user_id := ps.ByName("id")
+
+		if user_id == "new" {
 			tpls.ExecuteTemplate(w, "users/new.gohtml", nil)
 
 			return
@@ -43,9 +92,39 @@ func main() {
 		// otherwise, the intent is to visit a user profile page
 
 		// TODO: get user by id:
+		stmt, errPrepare := db.Prepare(`select * from goissuez.users where id = $1 limit 1`)
+
+		if errPrepare != nil {
+			log.Println("errPrepare", errPrepare)
+		}
+
+		defer stmt.Close()
+
+		row := stmt.QueryRow(user_id)
+
+		var (
+			id         int64
+			name       string
+			email      string
+			password   string
+			username   string
+			created_at string
+			updated_at string
+			last_login string
+		)
+
+		if scanErr := row.Scan(&id, &name, &email, &password, &username, &created_at, &updated_at, &last_login); scanErr != nil {
+			log.Println("Get user error", scanErr)
+		}
+
 		userProfile := user{
-			Name: "Danny",
-			Email: "danny@testing.com",
+			ID:        id,
+			Name:      name,
+			Username:  username,
+			Email:     email,
+			CreatedAt: created_at,
+			UpdatedAt: updated_at,
+			LastLogin: last_login,
 		}
 
 		type Data struct {
@@ -55,21 +134,90 @@ func main() {
 		tpls.ExecuteTemplate(w, "users/user.gohtml", Data{User: userProfile})
 	})
 
-	router.POST("/users", func (w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	router.GET("/users", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		stmt, errPrepare := db.Prepare(`select * from goissuez.users`)
+
+		if errPrepare != nil {
+			log.Println("errPrepare", errPrepare)
+		}
+
+		defer stmt.Close()
+
+		rows, errQuery := stmt.Query()
+
+		if errQuery != nil {
+			log.Println("errQuery", errQuery)
+		}
+
+		users := []user{}
+
+		for rows.Next() {
+			var (
+				id         int64
+				name       string
+				email      string
+				password   string
+				username   string
+				created_at string
+				updated_at string
+				last_login string
+			)
+
+			if err := rows.Scan(&id, &name, &email, &password, &username, &created_at, &updated_at, &last_login); err != nil {
+				log.Fatal(err)
+			}
+
+			users = append(users, user{ID: id, Name: name, Email: email})
+		}
+
+		tplerr := tpls.ExecuteTemplate(w, "users/users.gohtml", struct{ Users []user }{users})
+
+		if tplerr != nil {
+			log.Println("Error looking at users", tplerr)
+		}
+	})
+
+	router.POST("/users", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		r.ParseForm()
 
+		name := r.PostForm.Get("name")
 		email := r.PostForm.Get("email")
 		password := r.PostForm.Get("password")
+		username := r.PostForm.Get("username")
 
-		fakeId := 1
+		stmt, stmtErr := db.Prepare(`
+insert into goissuez.users (name, email, password, username, created_at, updated_at, last_login )
+VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *;
+`)
 
-		// TODO: create new user in the db
-		log.Println("email", email)
-		log.Println("password", password)
+		if stmtErr != nil {
+			log.Println("Statement Error", stmtErr.Error())
+		}
+
+		defer stmt.Close()
+
+		var (
+			id         int64
+			_name      string
+			_email     string
+			_password  string
+			_username  string
+			created_at string
+			updated_at string
+			last_login string
+		)
+
+		scanErr := stmt.QueryRow(name, email, password, username).Scan(&id, &_name, &_email, &_password, &_username, &created_at, &updated_at, &last_login)
+
+		if scanErr != nil {
+			log.Println("Exec Statement Error", scanErr)
+		}
+
+		log.Println("id", id)
 
 		// redirect to GET("/users/:id")
 		// this redirect will not work if the status isn't 303
-		http.Redirect(w, r, "/users/" + string(fakeId), http.StatusSeeOther)
+		http.Redirect(w, r, "/users/"+string(id), http.StatusSeeOther)
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", router))

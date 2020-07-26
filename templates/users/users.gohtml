@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>User</title>
+    </head>
+    <body>
+
+        <h1>Users</h1>
+
+        {{if .Users}}
+            <ul>
+                {{range $k, $user := .Users}}
+
+                    <li>{{$user.ID}} - {{$user.Name}} ({{$user.Email}}) - <button data-user-delete="{{$user.ID}}">DELETE</button></li>
+
+                {{end}}
+            </ul>
+       {{else}}
+            No Users
+        {{end}}
+
+
+        <script>
+         window.onload = () => {
+             console.log('Loaded window')
+             const deleteButtons = document.querySelectorAll('[data-user-delete]')
+
+             deleteButtons.forEach(button => {
+                 button.addEventListener('click', evt => {
+
+                     const user_id = evt.currentTarget.getAttribute('data-user-delete')
+                     debugger
+                     var oReq = new XMLHttpRequest()
+
+                     oReq.addEventListener("error", evt => {
+                         debugger
+                     });
+
+                     oReq.addEventListener("load", evt => {
+                         debugger
+                     })
+                     oReq.open("DELETE", "http://localhost:8080/users/" + user_id)
+                     oReq.responseType = 'json'
+                     oReq.send()
+
+                     oReq.onload = evt => {
+
+                         debugger
+                     }
+
+                 })
+             })
+
+         }
+
+        </script>
+    </body>
+</html>

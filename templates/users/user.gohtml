@@ -6,13 +6,14 @@
     </head>
     <body>
 
-        <h1>User Profile</h1>
-        <p>
-            Name: {{.User.Name}}
-        </p>
-        <p>
-            Email: {{.User.Email}}
-        </p>
+        <h1>User - {{.User.Name}}</h1>
 
+        <ol>
+            <li>Username: {{.User.Username}}</li>
+            <li>Email: {{.User.Email}}</li>
+            <li>Created at: {{.User.CreatedAt}}</li>
+            <li>Updated at: {{.User.UpdatedAt}}</li>
+            <li>Last Login: {{.User.LastLogin}}</li>
+        </ol>
     </body>
 </html>
