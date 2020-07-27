@@ -46,6 +46,8 @@ func main() {
 
 	router := httprouter.New()
 
+	router.ServeFiles("/resources/*filepath", http.Dir("public/assets"))
+
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		tpls.ExecuteTemplate(w, "index.gohtml", nil)
 	})
