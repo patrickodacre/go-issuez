@@ -12,7 +12,12 @@
             <ul>
                 {{range $k, $user := .Users}}
 
-                    <li><a href="users/{{$user.ID}}">{{$user.ID}} - {{$user.Name}} ({{$user.Email}})</a> - <button data-user-delete="{{$user.ID}}">DELETE</button></li>
+                    <li>
+                        {{if $user.PhotoUrl}}
+                            <img height="50" width="50" alt="" src="resources/{{$user.PhotoUrl}}"/>
+                        {{end}}
+
+                        <a href="users/{{$user.ID}}">{{$user.ID}} - {{$user.Name}} ({{$user.Email}})</a> - <button data-user-delete="{{$user.ID}}">DELETE</button></li>
 
                 {{end}}
             </ul>

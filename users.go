@@ -2,8 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -17,6 +20,7 @@ type user struct {
 	ID        int64
 	Name      string
 	Username  string
+	PhotoUrl  string
 	Email     string
 	CreatedAt string
 	UpdatedAt string
@@ -58,16 +62,17 @@ func (c *userController) index(w http.ResponseWriter, r *http.Request, _ httprou
 			email      string
 			password   string
 			username   string
+			photo_url  sql.NullString
 			created_at string
 			updated_at string
 			last_login string
 		)
 
-		if err := rows.Scan(&id, &name, &email, &password, &username, &created_at, &updated_at, &last_login); err != nil {
+		if err := rows.Scan(&id, &name, &email, &password, &username, &photo_url, &created_at, &updated_at, &last_login); err != nil {
 			log.Fatal(err)
 		}
 
-		users = append(users, user{ID: id, Name: name, Email: email})
+		users = append(users, user{ID: id, Name: name, Email: email, PhotoUrl: photo_url.String})
 	}
 
 	e3 := tpls.ExecuteTemplate(w, "users/users.gohtml", struct{ Users []user }{users})
@@ -76,17 +81,60 @@ func (c *userController) index(w http.ResponseWriter, r *http.Request, _ httprou
 }
 
 func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// 1 mb
+	const MAX_MEMORY = 1 * 1024 * 1024
 
-	r.ParseForm()
+	r.ParseMultipartForm(MAX_MEMORY)
 
-	name := r.PostForm.Get("name")
-	email := r.PostForm.Get("email")
-	password := r.PostForm.Get("password")
-	username := r.PostForm.Get("username")
+	name := r.MultipartForm.Value["name"][0]
+	email := r.MultipartForm.Value["email"][0]
+	password := r.MultipartForm.Value["password"][0]
+	username := r.MultipartForm.Value["username"][0]
+	pic, pic_header, err_formfile := r.FormFile("pic")
+
+	if err_formfile != nil {
+		http.Error(w, err_formfile.Error(), 500)
+
+		return
+	}
+
+	c.log.Println("Creating user: ", name, email, password, username, pic_header.Filename)
+
+	// BEGIN: save profile photo
+	bs, err_readall := ioutil.ReadAll(pic)
+
+	if err_readall != nil {
+		http.Error(w, err_readall.Error(), 500)
+
+		return
+	}
+
+	relativePhotoPath := "img/users/" + pic_header.Filename
+	dstPath := filepath.Join("./public/assets/" + relativePhotoPath)
+
+	dst, err_createfile := os.Create(dstPath)
+
+	if err_createfile != nil {
+		http.Error(w, err_createfile.Error(), 500)
+
+		return
+	}
+
+	defer dst.Close()
+
+	// save the actual file contents
+	_, err_writefile := dst.Write(bs)
+
+	if err_writefile != nil {
+		http.Error(w, err_writefile.Error(), 500)
+
+		return
+	}
+	// END: Save profile photo
 
 	stmt, e1 := c.db.Prepare(`
-insert into goissuez.users (name, email, password, username, created_at, updated_at, last_login )
-VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *;
+insert into goissuez.users (name, email, password, username, photo_url, created_at, updated_at, last_login )
+VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *;
 `)
 
 	if handleError(e1, "Failed to prepare statement.") {
@@ -102,13 +150,14 @@ VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		_name      string
 		_password  string
 		_username  string
+		_photo_url sql.NullString
 		_email     string
 		created_at string
 		updated_at string
 		last_login string
 	)
 
-	e2 := stmt.QueryRow(name, email, password, username).Scan(&id, &_name, &_email, &_password, &_username, &created_at, &updated_at, &last_login)
+	e2 := stmt.QueryRow(name, email, password, username, relativePhotoPath).Scan(&id, &_name, &_email, &_password, &_username, &_photo_url, &created_at, &updated_at, &last_login)
 
 	if handleError(e2, "Failed to query row.") {
 		http.Error(w, e2.Error(), 500)
@@ -153,12 +202,13 @@ func (c *userController) show(w http.ResponseWriter, r *http.Request, ps httprou
 		email      string
 		password   string
 		username   string
+		photo_url  string
 		created_at string
 		updated_at string
 		last_login string
 	)
 
-	e2 := row.Scan(&id, &name, &email, &password, &username, &created_at, &updated_at, &last_login)
+	e2 := row.Scan(&id, &name, &email, &password, &username, &photo_url, &created_at, &updated_at, &last_login)
 
 	if handleError(e2, "Failed to scan user row.") {
 		http.Error(w, e2.Error(), 500)
