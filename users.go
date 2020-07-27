@@ -86,59 +86,99 @@ func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprou
 
 	r.ParseMultipartForm(MAX_MEMORY)
 
-	name := r.MultipartForm.Value["name"][0]
-	email := r.MultipartForm.Value["email"][0]
-	password := r.MultipartForm.Value["password"][0]
-	username := r.MultipartForm.Value["username"][0]
-	pic, pic_header, err_formfile := r.FormFile("pic")
+	var name string
+	var username string
+	var email string
+	var password string
 
-	if err_formfile != nil {
-		http.Error(w, err_formfile.Error(), 500)
+	form_names := r.MultipartForm.Value["name"]
+	form_usernames := r.MultipartForm.Value["username"]
+	form_emails := r.MultipartForm.Value["email"]
+	form_passwords := r.MultipartForm.Value["password"]
 
+	// all of these fields are required
+	if len(form_names) > 0 && form_names[0] != "" {
+		name = form_names[0]
+	} else {
+		http.Error(w, "NAME is required.", http.StatusUnprocessableEntity)
 		return
 	}
 
-	c.log.Println("Creating user: ", name, email, password, username, pic_header.Filename)
-
-	// BEGIN: save profile photo
-	bs, err_readall := ioutil.ReadAll(pic)
-
-	if err_readall != nil {
-		http.Error(w, err_readall.Error(), 500)
-
+	if len(form_usernames) > 0 && form_usernames[0] != "" {
+		username = form_usernames[0]
+	} else {
+		http.Error(w, "USERNAME is required.", http.StatusUnprocessableEntity)
 		return
 	}
 
-	relativePhotoPath := "img/users/" + pic_header.Filename
-	dstPath := filepath.Join("./public/assets/" + relativePhotoPath)
-
-	dst, err_createfile := os.Create(dstPath)
-
-	if err_createfile != nil {
-		http.Error(w, err_createfile.Error(), 500)
-
+	if len(form_emails) > 0 && form_emails[0] != "" {
+		email = form_emails[0]
+	} else {
+		http.Error(w, "EMAIL is required.", http.StatusUnprocessableEntity)
 		return
 	}
 
-	defer dst.Close()
-
-	// save the actual file contents
-	_, err_writefile := dst.Write(bs)
-
-	if err_writefile != nil {
-		http.Error(w, err_writefile.Error(), 500)
-
+	if len(form_passwords) > 0 && form_passwords[0] != "" {
+		password = form_passwords[0]
+	} else {
+		http.Error(w, "PASSWORD is required.", http.StatusUnprocessableEntity)
 		return
 	}
-	// END: Save profile photo
 
-	stmt, e1 := c.db.Prepare(`
+	// Profile photo is NOT required
+	// must use sql.NullString to ensure we have NULL set in the DB
+	// when we don't have a file.
+	var photoPathToSave sql.NullString
+	{
+		// the profile_url is not required
+		pic, pic_header, err_formfile := r.FormFile("pic")
+
+		// there will be an error if no file is selected for upload
+		if err_formfile == nil && pic_header.Filename != "" {
+
+			bs, err_readall := ioutil.ReadAll(pic)
+
+			if err_readall != nil {
+				http.Error(w, err_readall.Error(), 500)
+
+				return
+			}
+
+			photoPathToSave.String = "img/users/" + pic_header.Filename
+			photoPathToSave.Valid = true
+
+			dstPath := filepath.Join("./public/assets/" + photoPathToSave.String)
+
+			dst, err_createfile := os.Create(dstPath)
+
+			if err_createfile != nil {
+				http.Error(w, err_createfile.Error(), 500)
+
+				return
+			}
+
+			defer dst.Close()
+
+			// save the actual file contents
+			_, err_writefile := dst.Write(bs)
+
+			if err_writefile != nil {
+				http.Error(w, err_writefile.Error(), 500)
+
+				return
+			}
+		}
+	}
+
+	c.log.Println("Creating user: ", name, email, password, username, photoPathToSave)
+
+	stmt, err_prepare := c.db.Prepare(`
 insert into goissuez.users (name, email, password, username, photo_url, created_at, updated_at, last_login )
-VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *;
+VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id
 `)
 
-	if handleError(e1, "Failed to prepare statement.") {
-		http.Error(w, e1.Error(), 500)
+	if handleError(err_prepare, "Failed to prepare statement.") {
+		http.Error(w, err_prepare.Error(), http.StatusInternalServerError)
 
 		return
 	}
@@ -146,24 +186,18 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 	defer stmt.Close()
 
 	var (
-		id         int64
-		_name      string
-		_password  string
-		_username  string
-		_photo_url sql.NullString
-		_email     string
-		created_at string
-		updated_at string
-		last_login string
+		id int64
 	)
 
-	e2 := stmt.QueryRow(name, email, password, username, relativePhotoPath).Scan(&id, &_name, &_email, &_password, &_username, &_photo_url, &created_at, &updated_at, &last_login)
+	err_query := stmt.QueryRow(name, email, password, username, photoPathToSave).Scan(&id)
 
-	if handleError(e2, "Failed to query row.") {
-		http.Error(w, e2.Error(), 500)
+	if handleError(err_query, "Failed to query  row.") {
+		http.Error(w, err_query.Error(), http.StatusInternalServerError)
 
 		return
 	}
+
+	c.log.Println("Created user - ", string(id))
 
 	// redirect to GET("/users/:id")
 	// this redirect will not work if the status isn't 303
