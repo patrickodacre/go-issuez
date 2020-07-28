@@ -35,20 +35,20 @@ func (c *userController) index(w http.ResponseWriter, r *http.Request, _ httprou
 
 	c.log.Println("Listing users.")
 
-	stmt, e1 := c.db.Prepare(`select * from goissuez.users`)
+	stmt, err := c.db.Prepare(`select id, name, email, username, photo_url from goissuez.users`)
 
-	if handleError(e1, "Error listing users.") {
-		http.Error(w, e1.Error(), 500)
+	if handleError(err, "Error listing users.") {
+		http.Error(w, err.Error(), 500)
 
 		return
 	}
 
 	defer stmt.Close()
 
-	rows, e2 := stmt.Query()
+	rows, err := stmt.Query()
 
-	if handleError(e2, "Error listing users.") {
-		http.Error(w, e2.Error(), 500)
+	if handleError(err, "Error listing users.") {
+		http.Error(w, err.Error(), 500)
 
 		return
 	}
@@ -75,9 +75,9 @@ func (c *userController) index(w http.ResponseWriter, r *http.Request, _ httprou
 		users = append(users, user{ID: id, Name: name, Email: email, PhotoUrl: photo_url.String})
 	}
 
-	e3 := tpls.ExecuteTemplate(w, "users/users.gohtml", struct{ Users []user }{users})
+	err = tpls.ExecuteTemplate(w, "users/users.gohtml", struct{ Users []user }{users})
 
-	handleError(e3, "Failed to execute users.gohtml.")
+	handleError(err, "Failed to execute users.gohtml.")
 }
 
 func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -131,15 +131,15 @@ func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprou
 	var photoPathToSave sql.NullString
 	{
 		// the profile_url is not required
-		pic, pic_header, err_formfile := r.FormFile("pic")
+		pic, pic_header, err := r.FormFile("pic")
 
 		// there will be an error if no file is selected for upload
-		if err_formfile == nil && pic_header.Filename != "" {
+		if err == nil && pic_header.Filename != "" {
 
-			bs, err_readall := ioutil.ReadAll(pic)
+			bs, err := ioutil.ReadAll(pic)
 
-			if err_readall != nil {
-				http.Error(w, err_readall.Error(), 500)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
 
 				return
 			}
@@ -149,10 +149,10 @@ func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprou
 
 			dstPath := filepath.Join("./public/assets/" + photoPathToSave.String)
 
-			dst, err_createfile := os.Create(dstPath)
+			dst, err := os.Create(dstPath)
 
-			if err_createfile != nil {
-				http.Error(w, err_createfile.Error(), 500)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
 
 				return
 			}
@@ -160,10 +160,10 @@ func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprou
 			defer dst.Close()
 
 			// save the actual file contents
-			_, err_writefile := dst.Write(bs)
+			_, err = dst.Write(bs)
 
-			if err_writefile != nil {
-				http.Error(w, err_writefile.Error(), 500)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
 
 				return
 			}
@@ -172,13 +172,13 @@ func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprou
 
 	c.log.Println("Creating user: ", name, email, password, username, photoPathToSave)
 
-	stmt, err_prepare := c.db.Prepare(`
+	stmt, err := c.db.Prepare(`
 insert into goissuez.users (name, email, password, username, photo_url, created_at, updated_at, last_login )
 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id
 `)
 
-	if handleError(err_prepare, "Failed to prepare statement.") {
-		http.Error(w, err_prepare.Error(), http.StatusInternalServerError)
+	if handleError(err, "Failed to prepare statement.") {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
@@ -189,10 +189,10 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		id int64
 	)
 
-	err_query := stmt.QueryRow(name, email, password, username, photoPathToSave).Scan(&id)
+	err = stmt.QueryRow(name, email, password, username, photoPathToSave).Scan(&id)
 
-	if handleError(err_query, "Failed to query  row.") {
-		http.Error(w, err_query.Error(), http.StatusInternalServerError)
+	if handleError(err, "Failed to query  row.") {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
