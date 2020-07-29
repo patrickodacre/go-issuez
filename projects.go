@@ -284,6 +284,6 @@ func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Success"))
 }
