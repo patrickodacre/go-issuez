@@ -21,6 +21,28 @@ type authService struct {
 	tpls *template.Template
 }
 
+func (s *authService) guard(next httprouter.Handle) httprouter.Handle {
+
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+		s.log.Println("Auth Middleware Used")
+
+		authUser := s.getAuthUser(r)
+
+		if authUser == (user{}) {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+
+			return
+		}
+
+		// add our auth user to our context so other handlers
+		// have access to the user data
+		ctx := context.WithValue(r.Context(), "user", authUser)
+
+		next(w, r.WithContext(ctx), ps)
+	}
+}
+
 func NewAuthService(db *sql.DB, logger *log.Logger, tpls *template.Template) *authService {
 	return &authService{db, logger, tpls}
 }
