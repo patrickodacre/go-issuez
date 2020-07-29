@@ -17,6 +17,8 @@ import (
 
 var tpls *template.Template
 var db *sql.DB
+var auth *authService
+var users *userService
 
 func main() {
 
@@ -55,20 +57,19 @@ func main() {
 	})
 
 	// users
-	userController := NewUsersController(db, logger)
-	router.GET("/users", userController.index)
-	router.GET("/users/:id", userController.show)
-	router.POST("/users", userController.store)
-	router.DELETE("/users/:id", userController.destroy)
+	users = NewUserService(db, logger, tpls)
+	router.GET("/users", users.index)
+	router.GET("/users/:id", users.show)
+	router.POST("/users", users.store)
+	router.DELETE("/users/:id", users.destroy)
+	router.GET("/dashboard", users.dashboard)
 
-	authController := NewAuthController(db, logger)
-	router.GET("/register", authController.showRegistrationForm)
-	router.POST("/register-user", authController.registerUser)
-	router.GET("/login", authController.showLoginForm)
-	router.POST("/login-user", authController.loginUser)
-	router.GET("/logout", authController.logout)
-
-	router.GET("/dashboard", authController.dashboard)
+	auth = NewAuthService(db, logger, tpls)
+	router.GET("/register", auth.showRegistrationForm)
+	router.POST("/register-user", auth.registerUser)
+	router.GET("/login", auth.showLoginForm)
+	router.POST("/login-user", auth.loginUser)
+	router.GET("/logout", auth.logout)
 
 	router.GET("/register_old", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 

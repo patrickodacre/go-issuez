@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"html/template"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-type userController struct {
+type userService struct {
 	db  *sql.DB
 	log *log.Logger
+	tpls *template.Template
 }
 
 type user struct {
@@ -27,15 +29,15 @@ type user struct {
 	LastLogin string
 }
 
-func NewUsersController(db *sql.DB, logger *log.Logger) *userController {
-	return &userController{db, logger}
+func NewUserService(db *sql.DB, logger *log.Logger, tpls *template.Template) *userService {
+	return &userService{db, logger, tpls}
 }
 
-func (c *userController) index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *userService) index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	c.log.Println("Listing users.")
+	s.log.Println("Listing users.")
 
-	stmt, err := c.db.Prepare(`select id, name, email, username, photo_url from goissuez.users`)
+	stmt, err := s.db.Prepare(`select id, name, email, username, photo_url from goissuez.users`)
 
 	if handleError(err, "Error listing users.") {
 		http.Error(w, err.Error(), 500)
@@ -75,12 +77,12 @@ func (c *userController) index(w http.ResponseWriter, r *http.Request, _ httprou
 		users = append(users, user{ID: id, Name: name, Email: email, PhotoUrl: photo_url.String})
 	}
 
-	err = tpls.ExecuteTemplate(w, "users/users.gohtml", struct{ Users []user }{users})
+	err = s.tpls.ExecuteTemplate(w, "users/users.gohtml", struct{ Users []user }{users})
 
 	handleError(err, "Failed to execute users.gohtml.")
 }
 
-func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *userService) store(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// 1 mb
 	const MAX_MEMORY = 1 * 1024 * 1024
 
@@ -170,9 +172,9 @@ func (c *userController) store(w http.ResponseWriter, r *http.Request, _ httprou
 		}
 	}
 
-	c.log.Println("Creating user: ", name, email, password, username, photoPathToSave)
+	s.log.Println("Creating user: ", name, email, password, username, photoPathToSave)
 
-	stmt, err := c.db.Prepare(`
+	stmt, err := s.db.Prepare(`
 insert into goissuez.users (name, email, password, username, photo_url, created_at, updated_at, last_login )
 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id
 `)
@@ -197,20 +199,20 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		return
 	}
 
-	c.log.Println("Created user - ", string(id))
+	s.log.Println("Created user - ", string(id))
 
 	// redirect to GET("/users/:id")
 	// this redirect will not work if the status isn't 303
 	http.Redirect(w, r, "/users/"+string(id), http.StatusSeeOther)
 }
 
-func (c *userController) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (s *userService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	// /users/new - register a new user
 	user_id := ps.ByName("id")
 
 	if user_id == "new" {
-		tpls.ExecuteTemplate(w, "users/new.gohtml", nil)
+		s.tpls.ExecuteTemplate(w, "users/new.gohtml", nil)
 
 		return
 	}
@@ -218,7 +220,7 @@ func (c *userController) show(w http.ResponseWriter, r *http.Request, ps httprou
 	// otherwise, the intent is to visit a user profile page
 
 	// TODO: get user by id:
-	stmt, e1 := c.db.Prepare(`select * from goissuez.users where id = $1 limit 1`)
+	stmt, e1 := s.db.Prepare(`select * from goissuez.users where id = $1 limit 1`)
 
 	if handleError(e1, "Failed to prepare show user.") {
 		http.Error(w, e1.Error(), 500)
@@ -260,15 +262,35 @@ func (c *userController) show(w http.ResponseWriter, r *http.Request, ps httprou
 		LastLogin: last_login,
 	}
 
-	e3 := tpls.ExecuteTemplate(w, "users/user.gohtml", struct{ User user }{userProfile})
+	e3 := s.tpls.ExecuteTemplate(w, "users/user.gohtml", struct{ User user }{userProfile})
 
 	handleError(e3, "Failed to execture user.gohtml")
 }
 
-func (c *userController) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	authUser, ok := r.Context().Value("user").(user)
+
+	s.log.Println("Dashboard -- ", authUser, ok)
+
+	if !ok {
+		authUser = auth.getAuthUser(r)
+
+		// no auth user, must login:
+		if authUser == (user{}) {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+
+			return
+		}
+	}
+
+	s.tpls.ExecuteTemplate(w, "users/dashboard.gohtml", struct{ User user }{authUser})
+}
+
+func (s *userService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	user_id := ps.ByName("id")
 
-	stmt, e1 := c.db.Prepare(`DELETE from goissuez.users WHERE id = $1`)
+	stmt, e1 := s.db.Prepare(`DELETE from goissuez.users WHERE id = $1`)
 
 	if handleError(e1, "Failed to delete user.") {
 		http.Error(w, e1.Error(), 500)

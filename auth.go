@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,21 +15,22 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type authController struct {
-	db  *sql.DB
-	log *log.Logger
+type authService struct {
+	db   *sql.DB
+	log  *log.Logger
+	tpls *template.Template
 }
 
-func NewAuthController(db *sql.DB, logger *log.Logger) *authController {
-	return &authController{db, logger}
+func NewAuthService(db *sql.DB, logger *log.Logger, tpls *template.Template) *authService {
+	return &authService{db, logger, tpls}
 }
 
 // Display a registration form.
-func (c *authController) showRegistrationForm(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	tpls.ExecuteTemplate(w, "users/new.gohtml", nil)
+func (s *authService) showRegistrationForm(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	s.tpls.ExecuteTemplate(w, "users/new.gohtml", nil)
 }
 
-func (c *authController) registerUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *authService) registerUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	const MAX_MEMORY = 1 * 1024 * 1024
 
@@ -118,9 +120,9 @@ func (c *authController) registerUser(w http.ResponseWriter, r *http.Request, _ 
 		}
 	}
 
-	c.log.Println("Creating user: ", name, email, password, username, photoPathToSave)
+	s.log.Println("Creating user: ", name, email, password, username, photoPathToSave)
 
-	stmt, err := c.db.Prepare(`
+	stmt, err := s.db.Prepare(`
 INSERT into goissuez.users (name, email, password, username, photo_url, created_at, updated_at, last_login )
 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id
 `)
@@ -145,10 +147,10 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		return
 	}
 
-	c.log.Println("Created user - ", id)
+	s.log.Println("Created user - ", id)
 
 	// login
-	userData, err := c.login(c.db, w, username, password)
+	authUser, err := s.authenticateUser(username, password, s.db, w)
 
 	if err != nil {
 		http.Error(w, "Cannot login.", http.StatusInternalServerError)
@@ -156,9 +158,9 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		return
 	}
 
-	c.log.Println("Logged in user", userData)
+	s.log.Println("Logged in user", authUser)
 
-	ctx := context.WithValue(r.Context(), "user", userData)
+	ctx := context.WithValue(r.Context(), "user", authUser)
 
 	http.Redirect(w, r.WithContext(ctx), "/dashboard", http.StatusSeeOther)
 
@@ -167,8 +169,8 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 	// http.Redirect(w, r, "/users/"+string(id), http.StatusSeeOther)
 }
 
-func (c *authController) showLoginForm(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	authUser := c.getAuthUser(r)
+func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	authUser := s.getAuthUser(r)
 
 	// already logged in
 	if authUser != (user{}) {
@@ -177,18 +179,18 @@ func (c *authController) showLoginForm(w http.ResponseWriter, r *http.Request, _
 		return
 	}
 
-	c.log.Println("Showing login form.")
-	tpls.ExecuteTemplate(w, "users/loginform.gohtml", nil)
+	s.log.Println("Showing login form.")
+	s.tpls.ExecuteTemplate(w, "users/loginform.gohtml", nil)
 }
 
-func (c *authController) loginUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	r.ParseForm()
 
 	username := r.PostForm.Get("username")
 	password := r.PostForm.Get("password")
 
-	authUser, err := c.login(c.db, w, username, password)
+	authUser, err := s.authenticateUser(username, password, s.db, w)
 
 	if err != nil {
 		http.Error(w, "Cannot login.", http.StatusInternalServerError)
@@ -196,43 +198,25 @@ func (c *authController) loginUser(w http.ResponseWriter, r *http.Request, _ htt
 		return
 	}
 
-	c.log.Println("Logged in user", authUser)
+	s.log.Println("Logged in user", authUser)
 
 	ctx := context.WithValue(r.Context(), "user", authUser)
 
 	http.Redirect(w, r.WithContext(ctx), "/dashboard", http.StatusSeeOther)
 }
 
-func (c *authController) dashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-	var ok bool
-	var authUser user
-
-	authUser, ok = r.Context().Value("user").(user)
-
-	c.log.Println("Dashboard -- ", authUser, ok)
-
-	if !ok {
-		authUser = c.getAuthUser(r)
-
-		// no auth user, must login:
-		if authUser == (user{}) {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-
-			return
-		}
-	}
-
-	tpls.ExecuteTemplate(w, "users/dashboard.gohtml", struct{ User user }{authUser})
-}
-
 // Update sessions table with a new session UUID and SetCookie
-func (c *authController) login(db *sql.DB, w http.ResponseWriter, username string, password string) (user, error) {
+func (s *authService) authenticateUser(
+	username string,
+	password string,
+	db *sql.DB,
+	w http.ResponseWriter,
+) (user, error) {
 
 	stmt, err := db.Prepare(`SELECT id, name, email, username, password, photo_url FROM goissuez.users u WHERE u.username = $1 LIMIT 1`)
 
 	if err != nil {
-		c.log.Println("Error ", err)
+		s.log.Println("Error ", err)
 		return user{}, err
 	}
 
@@ -241,11 +225,11 @@ func (c *authController) login(db *sql.DB, w http.ResponseWriter, username strin
 	rows, err := stmt.Query(username)
 
 	if err != nil {
-		c.log.Println("Error ", err)
+		s.log.Println("Error ", err)
 		return user{}, err
 	}
 
-	var userData user
+	var authUser user
 
 	for rows.Next() {
 		var (
@@ -261,11 +245,11 @@ func (c *authController) login(db *sql.DB, w http.ResponseWriter, username strin
 		)
 
 		if err := rows.Scan(&id, &name, &email, &username, &password, &photo_url); err != nil {
-			c.log.Println("Error ", err)
+			s.log.Println("Error ", err)
 			return user{}, err
 		}
 
-		userData = user{
+		authUser = user{
 			ID:       id,
 			Name:     name,
 			Email:    email,
@@ -275,8 +259,8 @@ func (c *authController) login(db *sql.DB, w http.ResponseWriter, username strin
 		}
 	}
 
-	if userData == (user{}) {
-		c.log.Println("Error ", err)
+	if authUser == (user{}) {
+		s.log.Println("Error ", err)
 		return user{}, errors.New("Failed to login.")
 	}
 
@@ -286,14 +270,14 @@ func (c *authController) login(db *sql.DB, w http.ResponseWriter, username strin
 	uuid, err := uuid.NewRandom()
 
 	if err != nil {
-		c.log.Println("Error ", err)
+		s.log.Println("Error ", err)
 		return user{}, err
 	}
 
 	stmt, err = db.Prepare(`INSERT into goissuez.sessions (uuid, user_id, created_at) values ($1, $2, CURRENT_TIMESTAMP) RETURNING user_id`)
 
 	if err != nil {
-		c.log.Println("Error ", err)
+		s.log.Println("Error ", err)
 		return user{}, err
 	}
 
@@ -302,12 +286,28 @@ func (c *authController) login(db *sql.DB, w http.ResponseWriter, username strin
 	// clear out old sessions
 	// it's easier to just record a new session and clear old ones
 	// rather than update existing records with a new uuid
-	defer c.flushSessions(uuid.String(), userData.ID)
+	defer func() {
+		stmt, err := s.db.Prepare(`DELETE from goissuez.sessions WHERE user_id = $1 AND uuid != $2`)
 
-	_, err = stmt.Exec(uuid.String(), userData.ID)
+		if err != nil {
+			s.log.Println("Error s.db.Prepare() flushing sessions for user id: ", authUser.ID, err)
+
+			return
+		}
+
+		defer stmt.Close()
+
+		_, err = stmt.Exec(authUser.ID, uuid.String())
+
+		if err != nil {
+			s.log.Println("Error stmt.Exec() flushing sessions for user id: ", authUser.ID, err)
+		}
+	}()
+
+	_, err = stmt.Exec(uuid.String(), authUser.ID)
 
 	if err != nil {
-		c.log.Println("Error ", err)
+		s.log.Println("Error ", err)
 		return user{}, err
 	}
 
@@ -320,31 +320,10 @@ func (c *authController) login(db *sql.DB, w http.ResponseWriter, username strin
 		HttpOnly: true, // not available to JS
 	})
 
-	return userData, nil
+	return authUser, nil
 }
 
-func (c *authController) flushSessions(uuid string, user_id int64) {
-
-	stmt, err := c.db.Prepare(`DELETE from goissuez.sessions WHERE user_id = $1 AND uuid != $2`)
-
-	if err != nil {
-		c.log.Println("Error flushing sessions for user_id: ", user_id, err)
-
-		return
-	}
-
-	defer stmt.Close()
-
-	_, err = stmt.Exec(user_id, uuid)
-
-	if err != nil {
-		c.log.Println("Error flushing sessions for user_id: ", user_id, err)
-
-		return
-	}
-}
-
-func (c *authController) logout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *authService) logout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	cookie, err := r.Cookie("goissuez")
 
 	if err != nil {
@@ -357,52 +336,62 @@ func (c *authController) logout(w http.ResponseWriter, r *http.Request, _ httpro
 
 	http.SetCookie(w, cookie)
 
-	w.Write([]byte("Logged Out"))
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func (c *authController) getAuthUser(r *http.Request) user {
+func (s *authService) getAuthUser(r *http.Request) user {
 	cookie, err := r.Cookie("goissuez")
 
+	// no cookie == error
 	if err != nil {
-		return user{} // == nil
+		return user{}
 	}
 
 	sql := `
-SELECT u.id, u.name, u.username, u.email  from goissuez.users u
+SELECT u.id, u.name, u.username, u.email, u.created_at, u.updated_at, u.last_login FROM goissuez.users u
 INNER JOIN goissuez.sessions s ON s.user_id = u.id
-WHERE s.uuid = $1 LIMIT 1
+WHERE s.uuid = $1
+LIMIT 1
 `
-	stmt, err := c.db.Prepare(sql)
+	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
+		s.log.Println("Error Prepare getAuthUser: ", err)
 		return user{}
 	}
 
 	rows, err := stmt.Query(cookie.Value)
 
 	if err != nil {
+		s.log.Println("Error Query getAuthUser: ", err)
 		return user{}
 	}
 
 	var (
-		id       int64
-		name     string
-		email    string
-		username string
+		id         int64
+		name       string
+		email      string
+		username   string
+		created_at string
+		updated_at string
+		last_login string
 	)
 
 	for rows.Next() {
 
-		if err := rows.Scan(&id, &name, &email, &username); err != nil {
+		if err := rows.Scan(&id, &name, &email, &username, &created_at, &updated_at, &last_login); err != nil {
 			return user{}
 		}
 
 	}
 
 	return user{
-		ID:       id,
-		Name:     name,
-		Email:    email,
-		Username: username,
+		ID:        id,
+		Name:      name,
+		Email:     email,
+		Username:  username,
+		CreatedAt: created_at,
+		UpdatedAt: updated_at,
+		LastLogin: last_login,
 	}
 }
