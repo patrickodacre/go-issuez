@@ -62,9 +62,10 @@ func main() {
 	router.GET("/users/:id", users.show)
 	router.POST("/users", users.store)
 	router.DELETE("/users/:id", users.destroy)
-	router.GET("/dashboard", users.dashboard)
 
 	auth = NewAuthService(db, logger, tpls)
+	router.GET("/dashboard", auth.guard(users.dashboard))
+
 	router.GET("/register", auth.showRegistrationForm)
 	router.POST("/register-user", auth.registerUser)
 	router.GET("/login", auth.showLoginForm)
