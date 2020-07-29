@@ -19,6 +19,7 @@ var tpls *template.Template
 var db *sql.DB
 var auth *authService
 var users *userService
+var projects *projectService
 
 func main() {
 
@@ -58,6 +59,8 @@ func main() {
 
 	// users
 	users = NewUserService(db, logger, tpls)
+	projects = NewProjectService(db, logger, tpls)
+
 	router.GET("/users", users.index)
 	router.GET("/users/:id", users.show)
 	router.POST("/users", users.store)
@@ -71,6 +74,13 @@ func main() {
 	router.GET("/login", auth.showLoginForm)
 	router.POST("/login-user", auth.loginUser)
 	router.GET("/logout", auth.logout)
+
+	router.GET("/projects/:id/edit", auth.guard(projects.edit))
+	router.POST("/projects/:id/update", auth.guard(projects.update))
+	router.GET("/projects/:id", auth.guard(projects.show))
+	router.GET("/projects", auth.guard(projects.index))
+	router.POST("/projects", auth.guard(projects.store))
+	router.DELETE("/projects/:id", auth.guard(projects.destroy))
 
 	router.GET("/register_old", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 

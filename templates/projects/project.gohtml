@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>User</title>
+    </head>
+    <body>
+
+
+        <h1>Project Details</h1>
+
+        <div>
+            <a href="/projects/{{.ID}}/edit">EDIT</a>
+        </div>
+
+        <ul>
+            <li>ID: {{.ID}}</li>
+            <li>Name: {{.Name}}</li>
+            <li>Description: {{.Description}}</li>
+        </ul>
+
+        <div>
+            <button data-project-delete="{{.ID}}">DELETE</button>
+        </div>
+
+        <script>
+         window.onload = () => {
+             console.log('Loaded window')
+             const deleteButtons = document.querySelectorAll('[data-project-delete]')
+
+             deleteButtons.forEach(button => {
+                 button.addEventListener('click', evt => {
+
+                     const project_id = evt.currentTarget.getAttribute('data-project-delete')
+                     var oReq = new XMLHttpRequest()
+
+                     oReq.addEventListener("error", evt => {
+                         debugger
+                     });
+
+                     oReq.addEventListener("load", evt => {
+                         debugger
+
+                         location.href = "http://localhost:8080/projects"
+                     })
+
+                     oReq.open("DELETE", "http://localhost:8080/projects/" + project_id)
+                     oReq.responseType = 'json'
+                     oReq.send()
+
+                     oReq.onload = evt => {
+
+                         debugger
+                     }
+
+                 })
+             })
+
+         }
+        </script>
+    </body>
+</html>
+
