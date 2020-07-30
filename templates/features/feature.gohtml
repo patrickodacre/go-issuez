@@ -2,43 +2,40 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>User</title>
+        <title>Feature</title>
     </head>
     <body>
 
 
-        <h1>Project Details</h1>
+        <h1>Feature Details</h1>
 
         <div>
-            <a href="/projects">Back to projects list</a>
+            <a href="/projects/{{.ProjectID}}/features">Back to features list</a>
         </div>
         <div>
-            <a href="/projects/{{.ID}}/edit">EDIT</a>
+            <a href="/features/{{.ID}}/edit">EDIT</a>
         </div>
 
         <ul>
             <li>ID: {{.ID}}</li>
             <li>Name: {{.Name}}</li>
             <li>Description: {{.Description}}</li>
+            <li>Project: {{.Project.Name}}</li>
         </ul>
 
         <div>
-            <a href="/projects/{{.ID}}/features">See Features</a>
-        </div>
-
-        <div>
-            <button data-project-delete="{{.ID}}">DELETE</button>
+            <button data-feature-delete="{{.ID}}">DELETE</button>
         </div>
 
         <script>
          window.onload = () => {
              console.log('Loaded window')
-             const deleteButtons = document.querySelectorAll('[data-project-delete]')
+             const deleteButtons = document.querySelectorAll('[data-feature-delete]')
 
              deleteButtons.forEach(button => {
                  button.addEventListener('click', evt => {
 
-                     const project_id = evt.currentTarget.getAttribute('data-project-delete')
+                     const feature_id = evt.currentTarget.getAttribute('data-feature-delete')
                      var oReq = new XMLHttpRequest()
 
                      oReq.addEventListener("error", evt => {
@@ -48,10 +45,10 @@
                      oReq.addEventListener("load", evt => {
                          debugger
 
-                         location.href = "http://localhost:8080/projects"
+                         location.href = "http://localhost:8080/projects/{{.ProjectID}}/features"
                      })
 
-                     oReq.open("DELETE", "http://localhost:8080/projects/" + project_id)
+                     oReq.open("DELETE", "http://localhost:8080/features/" + feature_id)
                      oReq.responseType = 'json'
                      oReq.send()
 

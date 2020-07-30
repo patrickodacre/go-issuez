@@ -20,6 +20,7 @@ var db *sql.DB
 var auth *authService
 var users *userService
 var projects *projectService
+var features *featureService
 
 func main() {
 
@@ -57,16 +58,16 @@ func main() {
 		tpls.ExecuteTemplate(w, "index.gohtml", nil)
 	})
 
-	// users
 	users = NewUserService(db, logger, tpls)
+	auth = NewAuthService(db, logger, tpls)
 	projects = NewProjectService(db, logger, tpls)
+	features = NewFeatureService(db, logger, tpls)
 
 	router.GET("/users", users.index)
 	router.GET("/users/:id", users.show)
 	router.POST("/users", users.store)
 	router.DELETE("/users/:id", users.destroy)
 
-	auth = NewAuthService(db, logger, tpls)
 	router.GET("/dashboard", auth.guard(users.dashboard))
 
 	router.GET("/register", auth.showRegistrationForm)
@@ -75,12 +76,22 @@ func main() {
 	router.POST("/login-user", auth.loginUser)
 	router.GET("/logout", auth.logout)
 
-	router.GET("/projects/:id/edit", auth.guard(projects.edit))
-	router.POST("/projects/:id/update", auth.guard(projects.update))
-	router.GET("/projects/:id", auth.guard(projects.show))
+	router.GET("/projects/:project_id/edit", auth.guard(projects.edit))
+	router.POST("/projects/:project_id/update", auth.guard(projects.update))
+	router.GET("/projects/:project_id", auth.guard(projects.show))
 	router.GET("/projects", auth.guard(projects.index))
 	router.POST("/projects", auth.guard(projects.store))
-	router.DELETE("/projects/:id", auth.guard(projects.destroy))
+	router.DELETE("/projects/:project_id", auth.guard(projects.destroy))
+
+	// features are the parent issue type that will have child stories and bugs
+	router.GET("/projects/:project_id/features", auth.guard(features.index))
+	router.POST("/projects/:project_id/features", auth.guard(features.store))
+
+	router.GET("/projects/:project_id/features/new", auth.guard(features.create))
+	router.GET("/features/:feature_id/edit", auth.guard(features.edit))
+	router.POST("/features/:feature_id/update", auth.guard(features.update))
+	router.GET("/features/:feature_id", auth.guard(features.show))
+	router.DELETE("/features/:feature_id", auth.guard(features.destroy))
 
 	router.GET("/register_old", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 

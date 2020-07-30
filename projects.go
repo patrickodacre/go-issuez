@@ -21,6 +21,8 @@ type project struct {
 	Description string
 	UserID      int64
 	CreatedAt   string
+	UpdatedAt   string
+	Features    []feature
 }
 
 func NewProjectService(db *sql.DB, log *log.Logger, tpls *template.Template) *projectService {
@@ -32,8 +34,16 @@ func (s *projectService) index(w http.ResponseWriter, r *http.Request, _ httprou
 	authUser, _ := r.Context().Value("user").(user)
 
 	sql := `
-SELECT * FROM goissuez.projects p
-WHERE p.user_id = $1
+SELECT
+id,
+name,
+description,
+user_id,
+created_at,
+updated_at
+FROM goissuez.projects
+WHERE user_id = $1
+ORDER BY created_at
 `
 	stmt, err := s.db.Prepare(sql)
 
@@ -61,17 +71,18 @@ WHERE p.user_id = $1
 
 	projects := []project{}
 
-	var (
-		id          int64
-		name        string
-		description string
-		user_id     int64
-		created_at  string
-	)
-
 	for rows.Next() {
 
-		err := rows.Scan(&id, &name, &description, &user_id, &created_at)
+		projectData := project{}
+
+		err := rows.Scan(
+			&projectData.ID,
+			&projectData.Name,
+			&projectData.Description,
+			&projectData.UserID,
+			&projectData.CreatedAt,
+			&projectData.UpdatedAt,
+		)
 
 		if err != nil {
 
@@ -82,7 +93,7 @@ WHERE p.user_id = $1
 			return
 		}
 
-		projects = append(projects, project{ID: id, Name: name, Description: description, UserID: user_id, CreatedAt: created_at})
+		projects = append(projects, projectData)
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -101,8 +112,8 @@ func (s *projectService) store(w http.ResponseWriter, r *http.Request, _ httprou
 
 	sql := `
 INSERT INTO goissuez.projects
-(name, description, user_id, created_at)
-VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+(name, description, user_id, created_at, updated_at)
+VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 RETURNING id
 `
 	stmt, err := s.db.Prepare(sql)
@@ -134,16 +145,24 @@ RETURNING id
 }
 
 func (s *projectService) update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	authUser, _ := r.Context().Value("user").(user)
 
-	project_id := ps.ByName("id")
+	project_id := ps.ByName("project_id")
 
 	r.ParseForm()
 
 	projectName := r.PostForm.Get("name")
 	projectDescription := r.PostForm.Get("description")
 
-	stmt, err := s.db.Prepare(`UPDATE goissuez.projects p SET name = $3, description = $4 WHERE p.id = $1 AND p.user_id = $2`)
+	sql := `
+UPDATE goissuez.projects
+SET
+name = $2,
+description = $3,
+updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`
+
+	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
 		s.log.Println("Error projects.update.prepare.", err)
@@ -155,7 +174,7 @@ func (s *projectService) update(w http.ResponseWriter, r *http.Request, ps httpr
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(project_id, authUser.ID, projectName, projectDescription)
+	_, err = stmt.Exec(project_id, projectName, projectDescription)
 
 	if err != nil {
 		s.log.Println("Error projects.update.exec.", err)
@@ -165,15 +184,23 @@ func (s *projectService) update(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	http.Redirect(w, r, "/projects", http.StatusSeeOther)
+	http.Redirect(w, r, "/projects/" + project_id, http.StatusSeeOther)
 }
 
 func (s *projectService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	authUser, _ := r.Context().Value("user").(user)
+	project_id := ps.ByName("project_id")
 
-	project_id := ps.ByName("id")
-
-	stmt, err := s.db.Prepare(`SELECT * FROM goissuez.projects WHERE id = $1 AND user_id = $2 LIMIT 1`)
+	sql := `
+SELECT
+id,
+name,
+description,
+user_id
+FROM goissuez.projects
+WHERE id = $1
+LIMIT 1
+`
+	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
 		s.log.Println("Error projects.edit.prepare.", err)
@@ -185,17 +212,16 @@ func (s *projectService) edit(w http.ResponseWriter, r *http.Request, ps httprou
 
 	defer stmt.Close()
 
-	row := stmt.QueryRow(project_id, authUser.ID)
+	row := stmt.QueryRow(project_id)
 
-	var (
-		id          int64
-		name        string
-		description string
-		user_id     int64
-		created_at  string
+	projectData := project{}
+
+	err = row.Scan(
+		&projectData.ID,
+		&projectData.Name,
+		&projectData.Description,
+		&projectData.UserID,
 	)
-
-	err = row.Scan(&id, &name, &description, &user_id, &created_at)
 
 	if err != nil {
 		s.log.Println("Error projects.edit.scan.", err)
@@ -207,13 +233,11 @@ func (s *projectService) edit(w http.ResponseWriter, r *http.Request, ps httprou
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	s.tpls.ExecuteTemplate(w, "projects/edit.gohtml", project{ID: id, Name: name, Description: description, UserID: user_id, CreatedAt: created_at})
+	s.tpls.ExecuteTemplate(w, "projects/edit.gohtml", projectData)
 }
 
 func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	authUser, _ := r.Context().Value("user").(user)
-
-	project_id := ps.ByName("id")
+	project_id := ps.ByName("project_id")
 
 	if project_id == "new" {
 		s.tpls.ExecuteTemplate(w, "projects/new.gohtml", nil)
@@ -221,7 +245,20 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	stmt, err := s.db.Prepare(`SELECT * FROM goissuez.projects WHERE id = $1 AND user_id = $2 LIMIT 1`)
+	sql := `
+SELECT
+id,
+name,
+description,
+user_id,
+created_at,
+updated_at
+FROM goissuez.projects
+WHERE id = $1
+LIMIT 1
+`
+
+	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
 		s.log.Println("Error projects.show.prepare.", err)
@@ -233,17 +270,19 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 
 	defer stmt.Close()
 
-	row := stmt.QueryRow(project_id, authUser.ID)
+	row := stmt.QueryRow(project_id)
 
-	var (
-		id          int64
-		name        string
-		description string
-		user_id     int64
-		created_at  string
+
+	projectData := project{}
+
+	err = row.Scan(
+		&projectData.ID,
+		&projectData.Name,
+		&projectData.Description,
+		&projectData.UserID,
+		&projectData.CreatedAt,
+		&projectData.UpdatedAt,
 	)
-
-	err = row.Scan(&id, &name, &description, &user_id, &created_at)
 
 	if err != nil {
 		s.log.Println("Error projects.show.scan.", err)
@@ -255,11 +294,11 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	s.tpls.ExecuteTemplate(w, "projects/project.gohtml", project{ID: id, Name: name, Description: description, UserID: user_id, CreatedAt: created_at})
+	s.tpls.ExecuteTemplate(w, "projects/project.gohtml", projectData)
 }
 
 func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	project_id := ps.ByName("id")
+	project_id := ps.ByName("project_id")
 
 	stmt, err := s.db.Prepare(`DELETE from goissuez.projects WHERE id = $1`)
 

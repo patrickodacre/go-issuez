@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Project Features</title>
+    </head>
+    <body>
+
+
+        <h1>Features for Project - {{.Project.Name}}</h1>
+
+        <div>
+            <a href="/projects/{{.Project.ID}}">Back to project</a>
+        </div>
+
+        <ul>
+            {{range $k, $feature := .Project.Features}}
+                <li><a href="/features/{{$feature.ID}}">{{$feature.Name}} - {{$feature.Description}}</a></li>
+            {{end}}
+        </ul>
+    </body>
+</html>
+
