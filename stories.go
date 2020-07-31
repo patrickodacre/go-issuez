@@ -134,9 +134,6 @@ ORDER BY created_at
 		featureData.Stories = append(featureData.Stories, *storyData)
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-
 	pageData := page{Title: "Stories", Data: featureData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")

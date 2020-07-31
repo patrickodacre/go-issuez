@@ -97,7 +97,6 @@ ORDER BY created_at
 	}
 
 	pageData := page{Title: "Projects", Data: struct{Projects []project}{projects}}
-	pageData.Content = "projects.gohtml"
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
