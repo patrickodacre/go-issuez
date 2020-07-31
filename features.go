@@ -24,6 +24,7 @@ type feature struct {
 	CreatedAt   string
 	UpdatedAt   string
 	Project     project
+	Stories     []story
 }
 
 func NewFeatureService(db *sql.DB, log *log.Logger, tpls *template.Template) *featureService {

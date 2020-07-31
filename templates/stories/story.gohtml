@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Story</title>
+    </head>
+    <body>
+
+
+        <h1>Story Details</h1>
+
+        <div>
+            <a href="/features/{{.FeatureID}}/stories">Back to stories list</a>
+        </div>
+        <div>
+            <a href="/stories/{{.ID}}/edit">EDIT</a>
+        </div>
+
+        <ul>
+            <li>ID: {{.ID}}</li>
+            <li>Name: {{.Name}}</li>
+            <li>Description: {{.Description}}</li>
+            <li>Feature: {{.Feature.Name}}</li>
+            <li>Created By: {{.Creator.Name}}</li>
+            <li>Assignee: {{.Assignee.Name}}</li>
+        </ul>
+
+        <div>
+            <button data-story-delete="{{.ID}}">DELETE</button>
+        </div>
+
+        <script>
+         window.onload = () => {
+             console.log('Loaded window')
+             const deleteButtons = document.querySelectorAll('[data-story-delete]')
+
+             deleteButtons.forEach(button => {
+                 button.addEventListener('click', evt => {
+
+                     const story_id = evt.currentTarget.getAttribute('data-story-delete')
+                     var oReq = new XMLHttpRequest()
+
+                     oReq.addEventListener("error", evt => {
+                         debugger
+                     });
+
+                     oReq.addEventListener("load", evt => {
+                         debugger
+
+                         location.href = "http://localhost:8080/features/{{.FeatureID}}/stories"
+                     })
+
+                     oReq.open("DELETE", "http://localhost:8080/stories/" + story_id)
+                     oReq.responseType = 'json'
+                     oReq.send()
+
+                     oReq.onload = evt => {
+
+                         debugger
+                     }
+
+                 })
+             })
+
+         }
+        </script>
+    </body>
+</html>
+

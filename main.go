@@ -21,6 +21,7 @@ var auth *authService
 var users *userService
 var projects *projectService
 var features *featureService
+var stories *storyService
 
 func main() {
 
@@ -62,6 +63,7 @@ func main() {
 	auth = NewAuthService(db, logger, tpls)
 	projects = NewProjectService(db, logger, tpls)
 	features = NewFeatureService(db, logger, tpls)
+	stories = NewStoryService(db, logger, tpls)
 
 	router.GET("/users", users.index)
 	router.GET("/users/:id", users.show)
@@ -95,6 +97,18 @@ func main() {
 	router.POST("/features/:feature_id/update", auth.guard(features.update))
 	router.GET("/features/:feature_id", auth.guard(features.show))
 	router.DELETE("/features/:feature_id", auth.guard(features.destroy))
+
+	// Stories
+	router.GET("/features/:feature_id/stories", auth.guard(stories.index))
+	router.POST("/features/:feature_id/stories", auth.guard(stories.store))
+
+	router.GET("/features/:feature_id/stories/new", auth.guard(stories.create))
+	router.GET("/stories/:story_id/edit", auth.guard(stories.edit))
+	router.POST("/stories/:story_id/update", auth.guard(stories.update))
+	router.GET("/stories/:story_id", auth.guard(stories.show))
+	router.DELETE("/stories/:story_id", auth.guard(stories.destroy))
+
+
 
 	router.GET("/register_old", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
