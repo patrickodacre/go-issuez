@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"database/sql"
-	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
 )
@@ -119,45 +118,6 @@ func main() {
 	router.POST("/bugs/:bug_id/update", auth.guard(bugs.update))
 	router.GET("/bugs/:bug_id", auth.guard(bugs.show))
 	router.DELETE("/bugs/:bug_id", auth.guard(bugs.destroy))
-
-	router.GET("/register_old", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-		uuid, err := uuid.NewRandom()
-
-		if err != nil {
-			log.Println("Failed to create UUID", err)
-		}
-
-		http.SetCookie(w, &http.Cookie{
-			Name:   "goissuez",
-			Value:  uuid.String(),
-			MaxAge: (60 * 60 * 24),
-			Path:   "/",
-			// Secure: true,
-			HttpOnly: true, // not available to JS
-		})
-
-	})
-
-	router.GET("/visit", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		cookie, err := r.Cookie("goissuez")
-
-		if err != nil {
-			w.Write([]byte("error : " + err.Error()))
-		}
-
-		w.Write([]byte("Welcome back " + cookie.Value))
-	})
-
-	// router.GET("/login", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// 	cookie, err := r.Cookie("goissuez")
-
-	// 	if err != nil {
-	// 		w.Write([]byte("error : " + err.Error()))
-	// 	}
-
-	// 	w.Write([]byte("Your cookie '" + cookie.Value + "' expires in " + cookie.Expires.String()))
-	// })
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
