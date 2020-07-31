@@ -331,14 +331,6 @@ func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprou
 
 	feature_id := ps.ByName("feature_id")
 
-	// Show Create form
-	if feature_id == "new" {
-
-		http.Redirect(w, r, "/new/project", http.StatusPermanentRedirect)
-
-		return
-	}
-
 	sql := `
 SELECT
 f.id,
