@@ -263,7 +263,7 @@ LIMIT 1
 	if err != nil {
 		s.log.Println("Error features.edit.scan.", err)
 
-		http.Error(w, "Error editing project.", http.StatusInternalServerError)
+		http.Error(w, "Error editing feature.", http.StatusInternalServerError)
 
 		return
 	}
