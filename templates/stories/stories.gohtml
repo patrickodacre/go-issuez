@@ -1,23 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Feature Stories</title>
-    </head>
-    <body>
+{{define "content"}}
+<h1>Stories for Feature - {{.Data.Name}}</h1>
 
+<div>
+    <a href="/projects/{{.Data.ProjectID}}/features">Back to features</a>
+</div>
 
-        <h1>Stories for Feature - {{.Feature.Name}}</h1>
-
-        <div>
-            <a href="/projects/{{.Feature.ProjectID}}/features">Back to features</a>
-        </div>
-
-        <ul>
-            {{range $k, $story := .Feature.Stories}}
-                <li><a href="/stories/{{$story.ID}}">{{$story.Name}} - {{$story.Description}}</a></li>
-            {{end}}
-        </ul>
-    </body>
-</html>
-
+<ul>
+    {{range $k, $story := .Data.Stories}}
+        <li><a href="/stories/{{$story.ID}}">{{$story.Name}} - {{$story.Description}}</a></li>
+    {{end}}
+</ul>
+{{end}}

@@ -1,23 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Create a Story for Feature {{.Feature.Name}}</title>
-    </head>
-    <body>
+{{define "content"}}
+<h1>Create a Story for Feature - {{.Data.Name}}</h1>
 
-        <h1>Create a Story for Feature - {{.Feature.Name}}</h1>
-
-        <form action="/features/{{.Feature.ID}}/stories" method="POST">
-            <div class="form-group">
-                <label for="name">Name</label>
-                <input type="text" class="form-control" id="name" name="name" aria-describedby="">
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <input type="text" class="form-control" id="description" name="description" aria-describedby="">
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-    </body>
-</html>
+<form action="/features/{{.Data.ID}}/stories" method="POST">
+    <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" class="form-control" id="name" name="name" aria-describedby="">
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <input type="text" class="form-control" id="description" name="description" aria-describedby="">
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{{end}}

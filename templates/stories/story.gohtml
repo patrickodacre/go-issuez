@@ -1,69 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Story</title>
-    </head>
-    <body>
+{{define "content"}}
+<h1>Story Details</h1>
 
+<div>
+    <a href="/features/{{.Data.FeatureID}}/stories">Back to stories list</a>
+</div>
+<div>
+    <a href="/stories/{{.Data.ID}}/edit">EDIT</a>
+</div>
 
-        <h1>Story Details</h1>
+<ul>
+    <li>ID: {{.Data.ID}}</li>
+    <li>Name: {{.Data.Name}}</li>
+    <li>Description: {{.Data.Description}}</li>
+    <li>Feature: {{.Data.Feature.Name}}</li>
+    <li>Created By: {{.Data.Creator.Name}}</li>
+    <li>Assignee: {{.Data.Assignee.Name}}</li>
+</ul>
 
-        <div>
-            <a href="/features/{{.FeatureID}}/stories">Back to stories list</a>
-        </div>
-        <div>
-            <a href="/stories/{{.ID}}/edit">EDIT</a>
-        </div>
+<div>
+    <button data-story-delete="{{.Data.ID}}">DELETE</button>
+</div>
 
-        <ul>
-            <li>ID: {{.ID}}</li>
-            <li>Name: {{.Name}}</li>
-            <li>Description: {{.Description}}</li>
-            <li>Feature: {{.Feature.Name}}</li>
-            <li>Created By: {{.Creator.Name}}</li>
-            <li>Assignee: {{.Assignee.Name}}</li>
-        </ul>
+<script>
+    window.onload = () => {
+        console.log('Loaded window')
+        const deleteButtons = document.querySelectorAll('[data-story-delete]')
 
-        <div>
-            <button data-story-delete="{{.ID}}">DELETE</button>
-        </div>
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', evt => {
 
-        <script>
-         window.onload = () => {
-             console.log('Loaded window')
-             const deleteButtons = document.querySelectorAll('[data-story-delete]')
+                const story_id = evt.currentTarget.getAttribute('data-story-delete')
+                var oReq = new XMLHttpRequest()
 
-             deleteButtons.forEach(button => {
-                 button.addEventListener('click', evt => {
+                oReq.addEventListener("error", evt => {
+                    debugger
+                });
 
-                     const story_id = evt.currentTarget.getAttribute('data-story-delete')
-                     var oReq = new XMLHttpRequest()
+                oReq.addEventListener("load", evt => {
+                    debugger
 
-                     oReq.addEventListener("error", evt => {
-                         debugger
-                     });
+                    location.href = "http://localhost:8080/features/{{.Data.FeatureID}}/stories"
+                })
 
-                     oReq.addEventListener("load", evt => {
-                         debugger
+                oReq.open("DELETE", "http://localhost:8080/stories/" + story_id)
+                oReq.responseType = 'json'
+                oReq.send()
 
-                         location.href = "http://localhost:8080/features/{{.FeatureID}}/stories"
-                     })
+                oReq.onload = evt => {
 
-                     oReq.open("DELETE", "http://localhost:8080/stories/" + story_id)
-                     oReq.responseType = 'json'
-                     oReq.send()
+                    debugger
+                }
 
-                     oReq.onload = evt => {
+            })
+        })
 
-                         debugger
-                     }
-
-                 })
-             })
-
-         }
-        </script>
-    </body>
-</html>
-
+    }
+</script>
+{{end}}

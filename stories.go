@@ -136,7 +136,15 @@ ORDER BY created_at
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	tpls.ExecuteTemplate(w, "stories/stories.gohtml", struct{ Feature feature }{featureData})
+
+	pageData := page{Title: "Stories", Data: featureData}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, log: s.log}
+	view.make("templates/stories/stories.gohtml")
+	view.exec("main_layout", pageData)
 }
 
 func (s *storyService) store(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -285,9 +293,14 @@ LIMIT 1
 		storyData.AssigneeID = assigneeID.Int64
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	pageData := page{Title: "Story Details", Data: storyData}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	s.tpls.ExecuteTemplate(w, "stories/edit.gohtml", storyData)
+
+	view := viewService{w: w, log: s.log}
+	view.make("templates/stories/edit.gohtml")
+	view.exec("main_layout", pageData)
 }
 
 // Show the new / create feature form.
@@ -341,7 +354,14 @@ LIMIT 1
 		return
 	}
 
-	s.tpls.ExecuteTemplate(w, "stories/new.gohtml", struct{ Feature feature }{featureData})
+	pageData := page{Title: "Story Details", Data: featureData}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, log: s.log}
+	view.make("templates/stories/new.gohtml")
+	view.exec("main_layout", pageData)
 }
 
 func (s *storyService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -427,9 +447,14 @@ LIMIT 1
 		storyData.AssigneeID = assigneeID.Int64
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	pageData := page{Title: "Story Details", Data: storyData}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	s.tpls.ExecuteTemplate(w, "stories/story.gohtml", storyData)
+
+	view := viewService{w: w, log: s.log}
+	view.make("templates/stories/story.gohtml")
+	view.exec("main_layout", pageData)
 }
 
 func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

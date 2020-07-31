@@ -1,23 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Create a Feature for Project {{.Project.Name}}</title>
-    </head>
-    <body>
-
-        <h1>Create a Feature for Project - {{.Project.Name}}</h1>
-
-        <form action="/projects/{{.Project.ID}}/features" method="POST">
-            <div class="form-group">
-                <label for="name">Name</label>
-                <input type="text" class="form-control" id="name" name="name" aria-describedby="">
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <input type="text" class="form-control" id="description" name="description" aria-describedby="">
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-    </body>
-</html>
+{{define "content"}}
+<h1>Create a Feature for Project - {{.Data.Name}}</h1>
+<form action="/projects/{{.Data.ID}}/features" method="POST">
+    <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" class="form-control" id="name" name="name" aria-describedby="">
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <input type="text" class="form-control" id="description" name="description" aria-describedby="">
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{{end}}

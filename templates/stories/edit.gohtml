@@ -1,23 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Edit Story - {{.Name}}</title>
-    </head>
-    <body>
+{{define "content"}}
+<h1>Edit Story - {{.Data.Name}}</h1>
 
-        <h1>Edit Story - {{.Name}}</h1>
-
-        <form action="/stories/{{.ID}}/update" method="POST">
-            <div class="form-group">
-                <label for="name">Name</label>
-                <input type="text" class="form-control" id="name" name="name" value="{{.Name}}" aria-describedby="">
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <input type="text" class="form-control" id="description" name="description" value="{{.Description}}" aria-describedby="">
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-    </body>
-</html>
+<form action="/stories/{{.Data.ID}}/update" method="POST">
+    <div class="formgroup">
+        <label for="name">Name</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{.Data.Name}}" aria-describedby="">
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <input type="text" class="form-control" id="description" name="description" value="{{.Data.Description}}" aria-describedby="">
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{{end}}

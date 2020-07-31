@@ -1,23 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Project Features</title>
-    </head>
-    <body>
+{{define "content"}}
 
+<h1>Features for Project - {{.Data.Name}}</h1>
 
-        <h1>Features for Project - {{.Project.Name}}</h1>
+<div>
+    <a href="/projects/{{.Data.ID}}">Back to project</a>
+</div>
 
-        <div>
-            <a href="/projects/{{.Project.ID}}">Back to project</a>
-        </div>
-
-        <ul>
-            {{range $k, $feature := .Project.Features}}
-                <li><a href="/features/{{$feature.ID}}">{{$feature.Name}} - {{$feature.Description}}</a></li>
-            {{end}}
-        </ul>
-    </body>
-</html>
+<ul>
+    {{range $k, $feature := .Data.Features}}
+        <li><a href="/features/{{$feature.ID}}">{{$feature.Name}} - {{$feature.Description}}</a></li>
+    {{end}}
+</ul>
+{{end}}
 

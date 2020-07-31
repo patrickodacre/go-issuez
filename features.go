@@ -124,9 +124,14 @@ ORDER BY f.created_at
 		projectData.Features = append(projectData.Features, *featureData)
 	}
 
+	pageData := page{Title: "Features", Data: projectData}
+
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	tpls.ExecuteTemplate(w, "features/features.gohtml", struct{ Project project }{projectData})
+
+	view := viewService{w: w, log: s.log}
+	view.make("templates/features/features.gohtml")
+	view.exec("main_layout", pageData)
 }
 
 // Save a project feature.
@@ -270,9 +275,15 @@ LIMIT 1
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	pageData := page{Title: "Edit Feature", Data: featureData}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	s.tpls.ExecuteTemplate(w, "features/edit.gohtml", featureData)
+
+	view := viewService{w: w, log: s.log}
+	view.make("templates/features/edit.gohtml")
+	view.exec("main_layout", pageData)
+
 }
 
 // Show the new / create feature form.
@@ -326,7 +337,14 @@ LIMIT 1
 		return
 	}
 
-	s.tpls.ExecuteTemplate(w, "features/new.gohtml", struct{ Project project }{projectData})
+	pageData := page{Title: "Create Feature", Data: projectData}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, log: s.log}
+	view.make("templates/features/new.gohtml")
+	view.exec("main_layout", pageData)
 }
 
 func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -385,9 +403,14 @@ LIMIT 1
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	pageData := page{Title: "Feature Details", Data: featureData}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	s.tpls.ExecuteTemplate(w, "features/feature.gohtml", featureData)
+
+	view := viewService{w: w, log: s.log}
+	view.make("templates/features/feature.gohtml")
+	view.exec("main_layout", pageData)
 }
 
 func (s *featureService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
