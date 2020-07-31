@@ -78,7 +78,10 @@ func main() {
 
 	router.GET("/projects/:project_id/edit", auth.guard(projects.edit))
 	router.POST("/projects/:project_id/update", auth.guard(projects.update))
+
+	// projects.show will redirect to create form if :project_id == "new"
 	router.GET("/projects/:project_id", auth.guard(projects.show))
+
 	router.GET("/projects", auth.guard(projects.index))
 	router.POST("/projects", auth.guard(projects.store))
 	router.DELETE("/projects/:project_id", auth.guard(projects.destroy))
