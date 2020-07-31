@@ -4,9 +4,15 @@
     <head>
         <meta charset="UTF-8">
         <title>{{ .Title }}</title>
+        <link href="/resources/bundle.css" rel="stylesheet">
     </head>
     <body>
-        {{template "content" . }}
+        <main role="main" class="flex-shrink-0">
+            <div class="container">
+                {{template "content" . }}
+            </div>
+        </main>
+        <script src="/resources/bundle.js"></script>
     </body>
 </html>
 {{end}}
