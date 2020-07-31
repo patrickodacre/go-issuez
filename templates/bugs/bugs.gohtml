@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Feature Bugs</title>
+    </head>
+    <body>
+
+
+        <h1>Bugs for Feature - {{.Feature.Name}}</h1>
+
+        <div>
+            <a href="/projects/{{.Feature.ProjectID}}/features">Back to features</a>
+        </div>
+
+        <ul>
+            {{range $k, $bug := .Feature.Bugs}}
+                <li><a href="/bugs/{{$bug.ID}}">{{$bug.Name}} - {{$bug.Description}}</a></li>
+            {{end}}
+        </ul>
+    </body>
+</html>
+

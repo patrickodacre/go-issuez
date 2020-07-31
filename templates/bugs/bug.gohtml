@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Bug</title>
+    </head>
+    <body>
+
+
+        <h1>Bug Details</h1>
+
+        <div>
+            <a href="/features/{{.FeatureID}}/bugs">Back to bugs list</a>
+        </div>
+        <div>
+            <a href="/bugs/{{.ID}}/edit">EDIT</a>
+        </div>
+
+        <ul>
+            <li>ID: {{.ID}}</li>
+            <li>Name: {{.Name}}</li>
+            <li>Description: {{.Description}}</li>
+            <li>Feature: {{.Feature.Name}}</li>
+            <li>Created By: {{.Creator.Name}}</li>
+            <li>Assignee: {{.Assignee.Name}}</li>
+        </ul>
+
+        <div>
+            <button data-bug-delete="{{.ID}}">DELETE</button>
+        </div>
+
+        <script>
+         window.onload = () => {
+             console.log('Loaded window')
+             const deleteButtons = document.querySelectorAll('[data-bug-delete]')
+
+             deleteButtons.forEach(button => {
+                 button.addEventListener('click', evt => {
+
+                     const bug_id = evt.currentTarget.getAttribute('data-bug-delete')
+                     var oReq = new XMLHttpRequest()
+
+                     oReq.addEventListener("error", evt => {
+                         debugger
+                     });
+
+                     oReq.addEventListener("load", evt => {
+                         debugger
+
+                         location.href = "http://localhost:8080/features/{{.FeatureID}}/bugs"
+                     })
+
+                     oReq.open("DELETE", "http://localhost:8080/bugs/" + bug_id)
+                     oReq.responseType = 'json'
+                     oReq.send()
+
+                     oReq.onload = evt => {
+
+                         debugger
+                     }
+
+                 })
+             })
+
+         }
+        </script>
+    </body>
+</html>
+

@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"database/sql"
-	"github.com/julienschmidt/httprouter"
 	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
 )
 
@@ -22,6 +22,7 @@ var users *userService
 var projects *projectService
 var features *featureService
 var stories *storyService
+var bugs *bugService
 
 func main() {
 
@@ -64,6 +65,7 @@ func main() {
 	projects = NewProjectService(db, logger, tpls)
 	features = NewFeatureService(db, logger, tpls)
 	stories = NewStoryService(db, logger, tpls)
+	bugs = NewBugService(db, logger, tpls)
 
 	router.GET("/users", users.index)
 	router.GET("/users/:id", users.show)
@@ -108,7 +110,15 @@ func main() {
 	router.GET("/stories/:story_id", auth.guard(stories.show))
 	router.DELETE("/stories/:story_id", auth.guard(stories.destroy))
 
+	// Bugs
+	router.GET("/features/:feature_id/bugs", auth.guard(bugs.index))
+	router.POST("/features/:feature_id/bugs", auth.guard(bugs.store))
 
+	router.GET("/features/:feature_id/bugs/new", auth.guard(bugs.create))
+	router.GET("/bugs/:bug_id/edit", auth.guard(bugs.edit))
+	router.POST("/bugs/:bug_id/update", auth.guard(bugs.update))
+	router.GET("/bugs/:bug_id", auth.guard(bugs.show))
+	router.DELETE("/bugs/:bug_id", auth.guard(bugs.destroy))
 
 	router.GET("/register_old", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
