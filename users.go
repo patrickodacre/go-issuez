@@ -274,10 +274,10 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 	s.log.Println("Dashboard -- ", authUser, ok)
 
 	if !ok {
-		authUser = auth.getAuthUser(r)
+		_, ok = auth.getAuthUser(r)
 
 		// no auth user, must login:
-		if authUser == (user{}) {
+		if !ok {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 
 			return

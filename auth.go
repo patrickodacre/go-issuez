@@ -27,9 +27,9 @@ func (s *authService) guard(next httprouter.Handle) httprouter.Handle {
 
 		s.log.Println("Auth Middleware Used")
 
-		authUser := s.getAuthUser(r)
+		authUser, ok := s.getAuthUser(r)
 
-		if authUser == (user{}) {
+		if !ok {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 
 			return
@@ -192,10 +192,10 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 }
 
 func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	authUser := s.getAuthUser(r)
+	_, ok := s.getAuthUser(r)
 
 	// already logged in
-	if authUser != (user{}) {
+	if ok {
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 
 		return
@@ -361,12 +361,12 @@ func (s *authService) logout(w http.ResponseWriter, r *http.Request, _ httproute
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func (s *authService) getAuthUser(r *http.Request) user {
+func (s *authService) getAuthUser(r *http.Request) (authUser user, ok bool) {
 	cookie, err := r.Cookie("goissuez")
 
 	// no cookie == error
 	if err != nil {
-		return user{}
+		return user{}, false
 	}
 
 	sql := `
@@ -379,14 +379,14 @@ LIMIT 1
 
 	if err != nil {
 		s.log.Println("Error Prepare getAuthUser: ", err)
-		return user{}
+		return user{}, false
 	}
 
 	rows, err := stmt.Query(cookie.Value)
 
 	if err != nil {
 		s.log.Println("Error Query getAuthUser: ", err)
-		return user{}
+		return user{}, false
 	}
 
 	var (
@@ -402,7 +402,7 @@ LIMIT 1
 	for rows.Next() {
 
 		if err := rows.Scan(&id, &name, &email, &username, &created_at, &updated_at, &last_login); err != nil {
-			return user{}
+			return user{}, false
 		}
 
 	}
@@ -415,5 +415,5 @@ LIMIT 1
 		CreatedAt: created_at,
 		UpdatedAt: updated_at,
 		LastLogin: last_login,
-	}
+	}, true
 }
