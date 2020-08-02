@@ -72,13 +72,33 @@ func main() {
 	bugs = NewBugService(db, log, tpls)
 
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		tpls.ExecuteTemplate(w, "index.gohtml", nil)
+
+		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+
+		view := viewService{w: w, r: r}
+		view.make("templates/index.gohtml")
+
+		err := view.exec("dashboard_layout", nil)
+
+		if err != nil {
+			log.Error(err)
+			http.Error(w, "Error", http.StatusInternalServerError)
+
+			return
+		}
 	})
 
 	router.GET("/users", users.index)
-	router.GET("/users/:id", users.show)
+	router.GET("/users/:user_id", users.show)
+
+	router.GET("/users/:user_id/projects", auth.guard(users.projects))
+	router.GET("/users/:user_id/features", auth.guard(users.features))
+	router.GET("/users/:user_id/stories", auth.guard(users.stories))
+	router.GET("/users/:user_id/bugs", auth.guard(users.bugs))
+
 	router.POST("/users", users.store)
-	router.DELETE("/users/:id", users.destroy)
+	router.DELETE("/users/:user_id", users.destroy)
 
 	router.GET("/dashboard", auth.guard(users.dashboard))
 
