@@ -2,12 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"html/template"
 	"io/ioutil"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path/filepath"
-	"html/template"
 
 	"github.com/julienschmidt/httprouter"
 )
