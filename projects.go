@@ -93,14 +93,14 @@ ORDER BY created_at
 		projects = append(projects, projectData)
 	}
 
-	pageData := page{Title: "Projects", Data: struct{Projects []project}{projects}}
+	pageData := page{Title: "All Projects", Data: struct{Projects []project}{projects}}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/projects.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -247,7 +247,7 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/edit.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -267,7 +267,7 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 
 		view := viewService{w: w, r: r}
 		view.make("templates/projects/new.gohtml")
-		err := view.exec("main_layout", pageData)
+		err := view.exec(mainLayout, pageData)
 
 		if err != nil {
 			s.log.Error(err)
@@ -331,7 +331,7 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/project.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)

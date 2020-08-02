@@ -23,8 +23,11 @@ var features *featureService
 var stories *storyService
 var bugs *bugService
 var log *logrus.Logger
+var mainLayout string
 
 func main() {
+
+	mainLayout = "dashboard_layout"
 
 	f, e2 := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 

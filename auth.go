@@ -65,7 +65,7 @@ func (s *authService) showRegistrationForm(w http.ResponseWriter, r *http.Reques
 
 	view := viewService{w: w, r: r}
 	view.make("templates/auth/registration-form.gohtml")
-	err := view.exec("main_layout", pageData)
+	err := view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -231,7 +231,7 @@ func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ ht
 
 	view := viewService{w: w, r: r}
 	view.make("templates/auth/loginform.gohtml")
-	err := view.exec("main_layout", pageData)
+	err := view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)

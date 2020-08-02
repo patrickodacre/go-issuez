@@ -268,7 +268,7 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 	view := viewService{w: w, r: r}
 	view.make("templates/users/dashboard.gohtml")
 
-	err := view.exec("main_layout", pageData)
+	err := view.exec("dashboard_layout", pageData)
 
 	if err != nil {
 		s.log.Error(err)

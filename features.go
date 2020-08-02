@@ -131,7 +131,7 @@ ORDER BY f.created_at
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/features.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -287,7 +287,7 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/edit.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -353,7 +353,7 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/new.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -424,7 +424,7 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/feature.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)

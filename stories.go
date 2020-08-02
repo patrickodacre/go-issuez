@@ -141,7 +141,7 @@ ORDER BY created_at
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/stories.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -302,7 +302,7 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/edit.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -368,7 +368,7 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/new.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
@@ -466,7 +466,7 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/story.gohtml")
-	err = view.exec("main_layout", pageData)
+	err = view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
