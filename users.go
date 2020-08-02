@@ -2,9 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"github.com/sirupsen/logrus"
 	"html/template"
 	"io/ioutil"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path/filepath"
