@@ -101,7 +101,7 @@ ORDER BY created_at
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	view := viewService{w: w, log: s.log}
+	view := viewService{w: w, r: r, log: s.log}
 	view.make("templates/projects/projects.gohtml")
 	view.exec("main_layout", pageData)
 }
@@ -241,7 +241,7 @@ LIMIT 1
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	view := viewService{w: w, log: s.log}
+	view := viewService{w: w, r: r, log: s.log}
 	view.make("templates/projects/edit.gohtml")
 	view.exec("main_layout", pageData)
 
@@ -257,7 +257,7 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 
-		view := viewService{w: w, log: s.log}
+		view := viewService{w: w, r: r, log: s.log}
 		view.make("templates/projects/new.gohtml")
 		view.exec("main_layout", pageData)
 
@@ -316,7 +316,7 @@ LIMIT 1
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	view := viewService{w: w, log: s.log}
+	view := viewService{w: w, r: r, log: s.log}
 	view.make("templates/projects/project.gohtml")
 	view.exec("main_layout", pageData)
 
