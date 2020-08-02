@@ -131,7 +131,12 @@ ORDER BY f.created_at
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/features.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 // Save a project feature.
@@ -282,8 +287,12 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/edit.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
 
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 // Show the new / create feature form.
@@ -344,7 +353,12 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/new.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -410,7 +424,12 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/feature.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 func (s *featureService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

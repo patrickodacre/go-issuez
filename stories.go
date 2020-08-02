@@ -141,7 +141,12 @@ ORDER BY created_at
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/stories.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 func (s *storyService) store(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -297,7 +302,12 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/edit.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 // Show the new / create feature form.
@@ -358,7 +368,12 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/new.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 func (s *storyService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -451,7 +466,12 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/story.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

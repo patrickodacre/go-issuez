@@ -26,16 +26,12 @@ func (s *viewService) make(filesnames ...string) {
 	tpls := template.Must(template.New("").ParseGlob("templates/layouts/*.gohtml"))
 
 	// now parse the specific content files we want
-	_, err := tpls.ParseFiles(filesnames...)
-
-	if err != nil {
-		// return err
-	}
+	tpls = template.Must(tpls.ParseFiles(filesnames...))
 
 	s.t = tpls
 }
 
-func (s *viewService) exec(layout string, data interface{}) {
+func (s *viewService) exec(layout string, data interface{}) error {
 
 	var pageData page
 
@@ -55,5 +51,5 @@ func (s *viewService) exec(layout string, data interface{}) {
 		pageData.IsLoggedIn = false
 	}
 
-	s.t.ExecuteTemplate(s.w, layout, pageData)
+	return s.t.ExecuteTemplate(s.w, layout, pageData)
 }

@@ -103,7 +103,14 @@ ORDER BY created_at
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/projects.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
 }
 
 func (s *projectService) store(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -243,8 +250,12 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/edit.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
 
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -259,7 +270,12 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 
 		view := viewService{w: w, r: r}
 		view.make("templates/projects/new.gohtml")
-		view.exec("main_layout", pageData)
+		err := view.exec("main_layout", pageData)
+
+		if err != nil {
+			s.log.Error(err)
+			http.Error(w, "Error", http.StatusInternalServerError)
+		}
 
 		return
 	}
@@ -318,8 +334,12 @@ LIMIT 1
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/project.gohtml")
-	view.exec("main_layout", pageData)
+	err = view.exec("main_layout", pageData)
 
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
 }
 
 func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
