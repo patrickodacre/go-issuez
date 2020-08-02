@@ -275,7 +275,22 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 		}
 	}
 
-	s.tpls.ExecuteTemplate(w, "users/dashboard.gohtml", struct{ User user }{authUser})
+	pageData := page{Title: "User Dashboard", Data: nil, IsLoggedIn: true, AuthUser: authUser}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, r: r}
+	view.make("templates/users/dashboard.gohtml")
+
+	err := view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
 }
 
 func (s *userService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
