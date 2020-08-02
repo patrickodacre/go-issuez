@@ -31,8 +31,6 @@ func NewProjectService(db *sql.DB, log *logrus.Logger, tpls *template.Template) 
 
 func (s *projectService) index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	authUser, _ := r.Context().Value("user").(user)
-
 	query := `
 SELECT
 id,
@@ -42,7 +40,6 @@ user_id,
 created_at,
 updated_at
 FROM goissuez.projects
-WHERE user_id = $1
 ORDER BY created_at
 `
 	stmt, err := s.db.Prepare(query)
