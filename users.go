@@ -258,6 +258,138 @@ func (s *userService) show(w http.ResponseWriter, r *http.Request, ps httprouter
 	handleError(e3, "Failed to execture user.gohtml")
 }
 
+func (s *userService) projects(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	user_id := ps.ByName("user_id")
+
+	// can ignore 'ok' b/c this route is behind auth.guard()
+	// authUser, _ := r.Context().Value("user").(user)
+
+	stmt, err := s.db.Prepare(`
+SELECT id, name, description, user_id, created_at, updated_at
+FROM goissuez.projects
+WHERE user_id = $1
+`)
+
+	if err != nil {
+		s.log.Error(err)
+
+		http.Error(w, "Error listing user projects.", http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := stmt.Query(user_id)
+
+	if err != nil {
+		s.log.Error(err)
+
+		http.Error(w, "Error listing user projects.", http.StatusInternalServerError)
+		return
+	}
+
+	projects := []project{}
+
+	for rows.Next() {
+		projectData := project{}
+
+		err := rows.Scan(
+			&projectData.ID,
+			&projectData.Name,
+			&projectData.Description,
+			&projectData.UserID,
+			&projectData.CreatedAt,
+			&projectData.UpdatedAt,
+		)
+
+		if err != nil {
+			s.log.Error(err)
+
+			http.Error(w, "Error listing user projects.", http.StatusInternalServerError)
+			return
+		}
+
+		projects = append(projects, projectData)
+	}
+
+
+	pageData := page{Title: "User Projects", Data: projects}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, r: r}
+	view.make("templates/users/projects.gohtml")
+
+	err = view.exec("dashboard_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
+}
+
+func (s *userService) features(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	pageData := page{Title: "User Features", Data: nil}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, r: r}
+	view.make("templates/users/features.gohtml")
+
+	err := view.exec("dashboard_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
+}
+
+func (s *userService) stories(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	pageData := page{Title: "User Stories", Data: nil}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, r: r}
+	view.make("templates/users/stories.gohtml")
+
+	err := view.exec("dashboard_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
+}
+
+func (s *userService) bugs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	pageData := page{Title: "User Bugs", Data: nil}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, r: r}
+	view.make("templates/users/bugs.gohtml")
+
+	err := view.exec("dashboard_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
+}
+
 func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	pageData := page{Title: "User Dashboard", Data: nil}

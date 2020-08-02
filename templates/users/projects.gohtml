@@ -1,0 +1,15 @@
+{{define "content"}}
+
+    {{if .Data }}
+
+    <ul class="list-group">
+        {{range $k, $project := .Data}}
+            <li class="list-group-item"><a href="projects/{{$project.ID}}">{{$project.Name}} - {{$project.Description}}</a></li>
+        {{end}}
+    </ul>
+    {{else}}
+    No Projects. <a href="/projects/new">Create one</a>, or <a href="/projects">see all projects.</a>
+
+    {{end}}
+
+{{end}}
