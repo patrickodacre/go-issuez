@@ -260,22 +260,7 @@ func (s *userService) show(w http.ResponseWriter, r *http.Request, ps httprouter
 
 func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	authUser, ok := r.Context().Value("user").(user)
-
-	s.log.Error("Dashboard -- ", authUser, ok)
-
-	if !ok {
-		_, ok = auth.getAuthUser(r)
-
-		// no auth user, must login:
-		if !ok {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-
-			return
-		}
-	}
-
-	pageData := page{Title: "User Dashboard", Data: nil, IsLoggedIn: true, AuthUser: authUser}
+	pageData := page{Title: "User Dashboard", Data: nil}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
