@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"html/template"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -11,7 +11,7 @@ import (
 
 type projectService struct {
 	db   *sql.DB
-	log  *log.Logger
+	log  *logrus.Logger
 	tpls *template.Template
 }
 
@@ -25,7 +25,7 @@ type project struct {
 	Features    []feature
 }
 
-func NewProjectService(db *sql.DB, log *log.Logger, tpls *template.Template) *projectService {
+func NewProjectService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *projectService {
 	return &projectService{db, log, tpls}
 }
 
@@ -49,7 +49,7 @@ ORDER BY created_at
 
 	if err != nil {
 
-		s.log.Println("Error projects.index.prepare.", err)
+		s.log.Error("Error projects.index.prepare.", err)
 
 		http.Error(w, "Error listing projects.", http.StatusInternalServerError)
 
@@ -62,7 +62,7 @@ ORDER BY created_at
 
 	if err != nil {
 
-		s.log.Println("Error projects.index.query.", err)
+		s.log.Error("Error projects.index.query.", err)
 
 		http.Error(w, "Error listing projects.", http.StatusInternalServerError)
 
@@ -86,7 +86,7 @@ ORDER BY created_at
 
 		if err != nil {
 
-			s.log.Println("Error projects.index.scan.", err)
+			s.log.Error("Error projects.index.scan.", err)
 
 			http.Error(w, "Error listing projects.", http.StatusInternalServerError)
 
@@ -131,7 +131,7 @@ RETURNING id
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error projects.store.prepare.", err)
+		s.log.Error("Error projects.store.prepare.", err)
 
 		http.Error(w, "Error creating project.", http.StatusInternalServerError)
 
@@ -147,7 +147,7 @@ RETURNING id
 	err = stmt.QueryRow(projectName, projectDescription, authUser.ID).Scan(&id)
 
 	if err != nil {
-		s.log.Println("Error projects.store.queryrow.", err)
+		s.log.Error("Error projects.store.queryrow.", err)
 
 		http.Error(w, "Error saving project.", http.StatusInternalServerError)
 		return
@@ -177,7 +177,7 @@ WHERE id = $1
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error projects.update.prepare.", err)
+		s.log.Error("Error projects.update.prepare.", err)
 
 		http.Error(w, "Error updating project.", http.StatusInternalServerError)
 
@@ -189,7 +189,7 @@ WHERE id = $1
 	_, err = stmt.Exec(project_id, projectName, projectDescription)
 
 	if err != nil {
-		s.log.Println("Error projects.update.exec.", err)
+		s.log.Error("Error projects.update.exec.", err)
 
 		http.Error(w, "Error updating project.", http.StatusInternalServerError)
 
@@ -215,7 +215,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error projects.edit.prepare.", err)
+		s.log.Error("Error projects.edit.prepare.", err)
 
 		http.Error(w, "Error editing project.", http.StatusInternalServerError)
 
@@ -236,7 +236,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error projects.edit.scan.", err)
+		s.log.Error("Error projects.edit.scan.", err)
 
 		http.Error(w, "Error editing project.", http.StatusInternalServerError)
 
@@ -296,7 +296,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error projects.show.prepare.", err)
+		s.log.Error("Error projects.show.prepare.", err)
 
 		http.Error(w, "Error getting project.", http.StatusInternalServerError)
 
@@ -320,7 +320,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error projects.show.scan.", err)
+		s.log.Error("Error projects.show.scan.", err)
 
 		http.Error(w, "Error getting project.", http.StatusInternalServerError)
 
@@ -348,7 +348,7 @@ func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps http
 	stmt, err := s.db.Prepare(`DELETE from goissuez.projects WHERE id = $1`)
 
 	if err != nil {
-		s.log.Println("Error projects.destroy.prepare.", err)
+		s.log.Error("Error projects.destroy.prepare.", err)
 
 		http.Error(w, "Error deleting project.", http.StatusInternalServerError)
 
@@ -360,7 +360,7 @@ func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps http
 	_, err = stmt.Exec(project_id)
 
 	if err != nil {
-		s.log.Println("Error projects.destroy.exec.", err)
+		s.log.Error("Error projects.destroy.exec.", err)
 
 		http.Error(w, "Error deleting project.", http.StatusInternalServerError)
 

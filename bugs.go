@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"html/template"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -11,7 +11,7 @@ import (
 
 type bugService struct {
 	db   *sql.DB
-	log  *log.Logger
+	log  *logrus.Logger
 	tpls *template.Template
 }
 
@@ -30,7 +30,7 @@ type bug struct {
 	Project     project
 }
 
-func NewBugService(db *sql.DB, log *log.Logger, tpls *template.Template) *bugService {
+func NewBugService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *bugService {
 	return &bugService{db, log, tpls}
 }
 
@@ -42,7 +42,7 @@ func (s *bugService) index(w http.ResponseWriter, r *http.Request, ps httprouter
 	stmt, err := s.db.Prepare(`SELECT id, name, description, project_id FROM goissuez.features WHERE id = $1`)
 
 	if err != nil {
-		s.log.Println("Error bugs.index.prepare.feature.", err)
+		s.log.Error("Error bugs.index.prepare.feature.", err)
 
 		http.Error(w, "Error listing bugs.", http.StatusInternalServerError)
 
@@ -54,7 +54,7 @@ func (s *bugService) index(w http.ResponseWriter, r *http.Request, ps httprouter
 	err = stmt.QueryRow(parentFeatureID).Scan(&featureData.ID, &featureData.Name, &featureData.Description, &featureData.ProjectID)
 
 	if err != nil {
-		s.log.Println("Error bugs.index.scan.feature.", err)
+		s.log.Error("Error bugs.index.scan.feature.", err)
 
 		http.Error(w, "Error listing bugs.", http.StatusInternalServerError)
 
@@ -79,7 +79,7 @@ ORDER BY created_at
 
 	if err != nil {
 
-		s.log.Println("Error bugs.index.prepare.", err)
+		s.log.Error("Error bugs.index.prepare.", err)
 
 		http.Error(w, "Error listing bugs.", http.StatusInternalServerError)
 
@@ -92,7 +92,7 @@ ORDER BY created_at
 
 	if err != nil {
 
-		s.log.Println("Error bugs.index.query.", err)
+		s.log.Error("Error bugs.index.query.", err)
 
 		http.Error(w, "Error listing bugs.", http.StatusInternalServerError)
 
@@ -117,7 +117,7 @@ ORDER BY created_at
 
 		if err != nil {
 
-			s.log.Println("Error bugs.index.scan.", err)
+			s.log.Error("Error bugs.index.scan.", err)
 
 			http.Error(w, "Error listing bugs.", http.StatusInternalServerError)
 
@@ -156,7 +156,7 @@ RETURNING id
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error bugs.store.prepare.", err)
+		s.log.Error("Error bugs.store.prepare.", err)
 
 		http.Error(w, "Error creating bug.", http.StatusInternalServerError)
 
@@ -168,7 +168,7 @@ RETURNING id
 	_, err = stmt.Exec(name, description, feature_id, authUser.ID)
 
 	if err != nil {
-		s.log.Println("Error bugs.store.queryrow.", err)
+		s.log.Error("Error bugs.store.queryrow.", err)
 
 		http.Error(w, "Error saving bug.", http.StatusInternalServerError)
 		return
@@ -197,7 +197,7 @@ RETURNING feature_id
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error bugs.update.prepare.", err)
+		s.log.Error("Error bugs.update.prepare.", err)
 
 		http.Error(w, "Error updating bug.", http.StatusInternalServerError)
 
@@ -213,7 +213,7 @@ RETURNING feature_id
 	err = stmt.QueryRow(bug_id, name, description).Scan(&feature_id)
 
 	if err != nil {
-		s.log.Println("Error bugs.update.exec.", err)
+		s.log.Error("Error bugs.update.exec.", err)
 
 		http.Error(w, "Error updating bug.", http.StatusInternalServerError)
 
@@ -245,7 +245,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error bugs.edit.prepare.", err)
+		s.log.Error("Error bugs.edit.prepare.", err)
 
 		http.Error(w, "Error editing bug.", http.StatusInternalServerError)
 
@@ -271,7 +271,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error bugs.edit.scan.", err)
+		s.log.Error("Error bugs.edit.scan.", err)
 
 		http.Error(w, "Error editing bug.", http.StatusInternalServerError)
 
@@ -308,7 +308,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error bugs.create.prepare.", err)
+		s.log.Error("Error bugs.create.prepare.", err)
 
 		http.Error(w, "Error creating bug", http.StatusInternalServerError)
 
@@ -331,7 +331,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error bugs.create.scan.", err)
+		s.log.Error("Error bugs.create.scan.", err)
 
 		http.Error(w, "Error creating bug.", http.StatusInternalServerError)
 
@@ -375,7 +375,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error bugs.show.prepare.", err)
+		s.log.Error("Error bugs.show.prepare.", err)
 
 		http.Error(w, "Error getting bug.", http.StatusInternalServerError)
 
@@ -407,7 +407,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error bugs.show.scan.", err)
+		s.log.Error("Error bugs.show.scan.", err)
 
 		http.Error(w, "Error getting bug.", http.StatusInternalServerError)
 
@@ -435,7 +435,7 @@ func (s *bugService) destroy(w http.ResponseWriter, r *http.Request, ps httprout
 	stmt, err := s.db.Prepare(`DELETE from goissuez.bugs WHERE id = $1`)
 
 	if err != nil {
-		s.log.Println("Error bugs.destroy.prepare.", err)
+		s.log.Error("Error bugs.destroy.prepare.", err)
 
 		http.Error(w, "Error deleting bug.", http.StatusInternalServerError)
 
@@ -447,7 +447,7 @@ func (s *bugService) destroy(w http.ResponseWriter, r *http.Request, ps httprout
 	_, err = stmt.Exec(bug_id)
 
 	if err != nil {
-		s.log.Println("Error bugs.destroy.exec.", err)
+		s.log.Error("Error bugs.destroy.exec.", err)
 
 		http.Error(w, "Error deleting bug.", http.StatusInternalServerError)
 

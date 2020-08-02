@@ -3,7 +3,6 @@ package main
 import (
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"database/sql"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 var tpls *template.Template
@@ -22,8 +22,21 @@ var projects *projectService
 var features *featureService
 var stories *storyService
 var bugs *bugService
+var log *logrus.Logger
 
 func main() {
+
+	f, e2 := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+
+	handleFatalError(e2, "Failed to open log file")
+
+	defer f.Close()
+
+	log = logrus.New()
+
+	log.Formatter = &logrus.JSONFormatter{}
+
+	log.Out = f
 
 	templateFuncs := template.FuncMap{}
 
@@ -34,7 +47,8 @@ func main() {
 	tpls = templates
 
 	for _, tpl := range tpls.Templates() {
-		log.Println("tpl", tpl.Name())
+		log.Info("tpl")
+		log.Info(tpl.Name())
 	}
 
 	db, e1 := sql.Open("postgres", "postgres://postgres:secret@172.17.0.2/postgres?sslmode=disable")
@@ -43,28 +57,20 @@ func main() {
 
 	defer db.Close()
 
-	f, e2 := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-
-	handleFatalError(e2, "Failed to open log file")
-
-	defer f.Close()
-
-	logger := log.New(f, "", 1)
-
 	router := httprouter.New()
 
 	router.ServeFiles("/resources/*filepath", http.Dir("public/assets"))
 
+	users = NewUserService(db, log, tpls)
+	auth = NewAuthService(db, log, tpls)
+	projects = NewProjectService(db, log, tpls)
+	features = NewFeatureService(db, log, tpls)
+	stories = NewStoryService(db, log, tpls)
+	bugs = NewBugService(db, log, tpls)
+
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		tpls.ExecuteTemplate(w, "index.gohtml", nil)
 	})
-
-	users = NewUserService(db, logger, tpls)
-	auth = NewAuthService(db, logger, tpls)
-	projects = NewProjectService(db, logger, tpls)
-	features = NewFeatureService(db, logger, tpls)
-	stories = NewStoryService(db, logger, tpls)
-	bugs = NewBugService(db, logger, tpls)
 
 	router.GET("/users", users.index)
 	router.GET("/users/:id", users.show)
@@ -158,7 +164,7 @@ func findAndParseTemplates(rootDir string, funcMap template.FuncMap) (*template.
 func handleError(err error, msg string) bool {
 
 	if err != nil {
-		log.Println(msg, err)
+		log.Fatal(msg, err)
 
 		return true
 	}
@@ -168,6 +174,6 @@ func handleError(err error, msg string) bool {
 
 func handleFatalError(err error, msg string) {
 	if err != nil {
-		log.Fatalln(msg, err)
+		log.Fatal(msg, err)
 	}
 }

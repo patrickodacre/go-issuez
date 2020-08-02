@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"html/template"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -11,7 +11,7 @@ import (
 
 type featureService struct {
 	db   *sql.DB
-	log  *log.Logger
+	log  *logrus.Logger
 	tpls *template.Template
 }
 
@@ -28,7 +28,7 @@ type feature struct {
 	Bugs        []bug
 }
 
-func NewFeatureService(db *sql.DB, log *log.Logger, tpls *template.Template) *featureService {
+func NewFeatureService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *featureService {
 	return &featureService{db, log, tpls}
 }
 
@@ -43,7 +43,7 @@ func (s *featureService) index(w http.ResponseWriter, r *http.Request, ps httpro
 	stmt, err := s.db.Prepare(`SELECT p.id, p.name, p.description FROM goissuez.projects p WHERE p.id = $1`)
 
 	if err != nil {
-		s.log.Println("Error features.index.prepare.project.", err)
+		s.log.Error("Error features.index.prepare.project.", err)
 
 		http.Error(w, "Error listing features.", http.StatusInternalServerError)
 
@@ -55,7 +55,7 @@ func (s *featureService) index(w http.ResponseWriter, r *http.Request, ps httpro
 	err = stmt.QueryRow(parentProjectID).Scan(&projectData.ID, &projectData.Name, &projectData.Description)
 
 	if err != nil {
-		s.log.Println("Error features.index.scan.project.", err)
+		s.log.Error("Error features.index.scan.project.", err)
 
 		http.Error(w, "Error listing features.", http.StatusInternalServerError)
 
@@ -78,7 +78,7 @@ ORDER BY f.created_at
 
 	if err != nil {
 
-		s.log.Println("Error features.index.prepare.features", err)
+		s.log.Error("Error features.index.prepare.features", err)
 
 		http.Error(w, "Error listing features.", http.StatusInternalServerError)
 
@@ -91,7 +91,7 @@ ORDER BY f.created_at
 
 	if err != nil {
 
-		s.log.Println("Error features.index.query.", err)
+		s.log.Error("Error features.index.query.", err)
 
 		http.Error(w, "Error listing features.", http.StatusInternalServerError)
 
@@ -114,7 +114,7 @@ ORDER BY f.created_at
 
 		if err != nil {
 
-			s.log.Println("Error features.index.scan.", err)
+			s.log.Error("Error features.index.scan.", err)
 
 			http.Error(w, "Error listing features.", http.StatusInternalServerError)
 
@@ -160,7 +160,7 @@ RETURNING id
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error features.store.prepare.", err)
+		s.log.Error("Error features.store.prepare.", err)
 
 		http.Error(w, "Error creating feature.", http.StatusInternalServerError)
 
@@ -172,7 +172,7 @@ RETURNING id
 	_, err = stmt.Exec(featureName, featureDescription, project_id, authUser.ID)
 
 	if err != nil {
-		s.log.Println("Error features.store.queryrow.", err)
+		s.log.Error("Error features.store.queryrow.", err)
 
 		http.Error(w, "Error saving feature.", http.StatusInternalServerError)
 		return
@@ -202,7 +202,7 @@ RETURNING project_id
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error features.update.prepare.", err)
+		s.log.Error("Error features.update.prepare.", err)
 
 		http.Error(w, "Error updating feature.", http.StatusInternalServerError)
 
@@ -218,7 +218,7 @@ RETURNING project_id
 	err = stmt.QueryRow(feature_id, featureName, featureDescription).Scan(&project_id)
 
 	if err != nil {
-		s.log.Println("Error features.update.exec.", err)
+		s.log.Error("Error features.update.exec.", err)
 
 		http.Error(w, "Error updating feature.", http.StatusInternalServerError)
 
@@ -249,7 +249,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error features.edit.prepare.", err)
+		s.log.Error("Error features.edit.prepare.", err)
 
 		http.Error(w, "Error editing feature.", http.StatusInternalServerError)
 
@@ -273,7 +273,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error features.edit.scan.", err)
+		s.log.Error("Error features.edit.scan.", err)
 
 		http.Error(w, "Error editing feature.", http.StatusInternalServerError)
 
@@ -316,7 +316,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error features.create.prepare.", err)
+		s.log.Error("Error features.create.prepare.", err)
 
 		http.Error(w, "Error creating feature", http.StatusInternalServerError)
 
@@ -339,7 +339,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error features.create.scan.", err)
+		s.log.Error("Error features.create.scan.", err)
 
 		http.Error(w, "Error creating feature.", http.StatusInternalServerError)
 
@@ -385,7 +385,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error features.show.prepare.", err)
+		s.log.Error("Error features.show.prepare.", err)
 
 		http.Error(w, "Error getting feature.", http.StatusInternalServerError)
 
@@ -410,7 +410,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error features.show.scan.", err)
+		s.log.Error("Error features.show.scan.", err)
 
 		http.Error(w, "Error getting feature.", http.StatusInternalServerError)
 
@@ -438,7 +438,7 @@ func (s *featureService) destroy(w http.ResponseWriter, r *http.Request, ps http
 	stmt, err := s.db.Prepare(`DELETE from goissuez.features WHERE id = $1`)
 
 	if err != nil {
-		s.log.Println("Error features.destroy.prepare.", err)
+		s.log.Error("Error features.destroy.prepare.", err)
 
 		http.Error(w, "Error deleting feature.", http.StatusInternalServerError)
 
@@ -450,7 +450,7 @@ func (s *featureService) destroy(w http.ResponseWriter, r *http.Request, ps http
 	_, err = stmt.Exec(feature_id)
 
 	if err != nil {
-		s.log.Println("Error features.destroy.exec.", err)
+		s.log.Error("Error features.destroy.exec.", err)
 
 		http.Error(w, "Error deleting feature.", http.StatusInternalServerError)
 

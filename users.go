@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"io/ioutil"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,8 +13,8 @@ import (
 )
 
 type userService struct {
-	db  *sql.DB
-	log *log.Logger
+	db   *sql.DB
+	log  *logrus.Logger
 	tpls *template.Template
 }
 
@@ -29,13 +29,13 @@ type user struct {
 	LastLogin string
 }
 
-func NewUserService(db *sql.DB, logger *log.Logger, tpls *template.Template) *userService {
+func NewUserService(db *sql.DB, logger *logrus.Logger, tpls *template.Template) *userService {
 	return &userService{db, logger, tpls}
 }
 
 func (s *userService) index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	s.log.Println("Listing users.")
+	s.log.Error("Listing users.")
 
 	stmt, err := s.db.Prepare(`select id, name, email, username, photo_url from goissuez.users`)
 
@@ -172,7 +172,7 @@ func (s *userService) store(w http.ResponseWriter, r *http.Request, _ httprouter
 		}
 	}
 
-	s.log.Println("Creating user: ", name, email, password, username, photoPathToSave)
+	s.log.Error("Creating user: ", name, email, password, username, photoPathToSave)
 
 	stmt, err := s.db.Prepare(`
 insert into goissuez.users (name, email, password, username, photo_url, created_at, updated_at, last_login )
@@ -199,7 +199,7 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		return
 	}
 
-	s.log.Println("Created user - ", string(id))
+	s.log.Error("Created user - ", string(id))
 
 	// redirect to GET("/users/:id")
 	// this redirect will not work if the status isn't 303
@@ -271,7 +271,7 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 
 	authUser, ok := r.Context().Value("user").(user)
 
-	s.log.Println("Dashboard -- ", authUser, ok)
+	s.log.Error("Dashboard -- ", authUser, ok)
 
 	if !ok {
 		_, ok = auth.getAuthUser(r)

@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"html/template"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -11,7 +11,7 @@ import (
 
 type storyService struct {
 	db   *sql.DB
-	log  *log.Logger
+	log  *logrus.Logger
 	tpls *template.Template
 }
 
@@ -30,7 +30,7 @@ type story struct {
 	Project     project
 }
 
-func NewStoryService(db *sql.DB, log *log.Logger, tpls *template.Template) *storyService {
+func NewStoryService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *storyService {
 	return &storyService{db, log, tpls}
 }
 
@@ -45,7 +45,7 @@ func (s *storyService) index(w http.ResponseWriter, r *http.Request, ps httprout
 	stmt, err := s.db.Prepare(`SELECT id, name, description, project_id FROM goissuez.features WHERE id = $1`)
 
 	if err != nil {
-		s.log.Println("Error stories.index.prepare.feature.", err)
+		s.log.Error("Error stories.index.prepare.feature.", err)
 
 		http.Error(w, "Error listing stories.", http.StatusInternalServerError)
 
@@ -57,7 +57,7 @@ func (s *storyService) index(w http.ResponseWriter, r *http.Request, ps httprout
 	err = stmt.QueryRow(parentFeatureID).Scan(&featureData.ID, &featureData.Name, &featureData.Description, &featureData.ProjectID)
 
 	if err != nil {
-		s.log.Println("Error stories.index.scan.feature.", err)
+		s.log.Error("Error stories.index.scan.feature.", err)
 
 		http.Error(w, "Error listing stories.", http.StatusInternalServerError)
 
@@ -82,7 +82,7 @@ ORDER BY created_at
 
 	if err != nil {
 
-		s.log.Println("Error stories.index.prepare.", err)
+		s.log.Error("Error stories.index.prepare.", err)
 
 		http.Error(w, "Error listing stories.", http.StatusInternalServerError)
 
@@ -95,7 +95,7 @@ ORDER BY created_at
 
 	if err != nil {
 
-		s.log.Println("Error stories.index.query.", err)
+		s.log.Error("Error stories.index.query.", err)
 
 		http.Error(w, "Error listing stories.", http.StatusInternalServerError)
 
@@ -120,7 +120,7 @@ ORDER BY created_at
 
 		if err != nil {
 
-			s.log.Println("Error stories.index.scan.", err)
+			s.log.Error("Error stories.index.scan.", err)
 
 			http.Error(w, "Error listing stories.", http.StatusInternalServerError)
 
@@ -169,7 +169,7 @@ RETURNING id
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error stories.store.prepare.", err)
+		s.log.Error("Error stories.store.prepare.", err)
 
 		http.Error(w, "Error creating story.", http.StatusInternalServerError)
 
@@ -181,7 +181,7 @@ RETURNING id
 	_, err = stmt.Exec(name, description, feature_id, authUser.ID)
 
 	if err != nil {
-		s.log.Println("Error stories.store.queryrow.", err)
+		s.log.Error("Error stories.store.queryrow.", err)
 
 		http.Error(w, "Error saving story.", http.StatusInternalServerError)
 		return
@@ -210,7 +210,7 @@ RETURNING feature_id
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error stories.update.prepare.", err)
+		s.log.Error("Error stories.update.prepare.", err)
 
 		http.Error(w, "Error updating story.", http.StatusInternalServerError)
 
@@ -226,7 +226,7 @@ RETURNING feature_id
 	err = stmt.QueryRow(story_id, name, description).Scan(&feature_id)
 
 	if err != nil {
-		s.log.Println("Error stories.update.exec.", err)
+		s.log.Error("Error stories.update.exec.", err)
 
 		http.Error(w, "Error updating story.", http.StatusInternalServerError)
 
@@ -258,7 +258,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error stories.edit.prepare.", err)
+		s.log.Error("Error stories.edit.prepare.", err)
 
 		http.Error(w, "Error editing story.", http.StatusInternalServerError)
 
@@ -284,7 +284,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error stories.edit.scan.", err)
+		s.log.Error("Error stories.edit.scan.", err)
 
 		http.Error(w, "Error editing story.", http.StatusInternalServerError)
 
@@ -331,7 +331,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error stories.create.prepare.", err)
+		s.log.Error("Error stories.create.prepare.", err)
 
 		http.Error(w, "Error creating story", http.StatusInternalServerError)
 
@@ -354,7 +354,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error stories.create.scan.", err)
+		s.log.Error("Error stories.create.scan.", err)
 
 		http.Error(w, "Error creating story.", http.StatusInternalServerError)
 
@@ -410,7 +410,7 @@ LIMIT 1
 	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
-		s.log.Println("Error stories.show.prepare.", err)
+		s.log.Error("Error stories.show.prepare.", err)
 
 		http.Error(w, "Error getting story.", http.StatusInternalServerError)
 
@@ -442,7 +442,7 @@ LIMIT 1
 	)
 
 	if err != nil {
-		s.log.Println("Error stories.show.scan.", err)
+		s.log.Error("Error stories.show.scan.", err)
 
 		http.Error(w, "Error getting story.", http.StatusInternalServerError)
 
@@ -480,7 +480,7 @@ func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httpro
 	stmt, err := s.db.Prepare(`DELETE from goissuez.stories WHERE id = $1`)
 
 	if err != nil {
-		s.log.Println("Error stories.destroy.prepare.", err)
+		s.log.Error("Error stories.destroy.prepare.", err)
 
 		http.Error(w, "Error deleting story.", http.StatusInternalServerError)
 
@@ -492,7 +492,7 @@ func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httpro
 	_, err = stmt.Exec(story_id)
 
 	if err != nil {
-		s.log.Println("Error stories.destroy.exec.", err)
+		s.log.Error("Error stories.destroy.exec.", err)
 
 		http.Error(w, "Error deleting story.", http.StatusInternalServerError)
 

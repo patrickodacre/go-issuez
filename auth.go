@@ -6,7 +6,7 @@ import (
 	"errors"
 	"html/template"
 	"io/ioutil"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,7 +17,7 @@ import (
 
 type authService struct {
 	db   *sql.DB
-	log  *log.Logger
+	log  *logrus.Logger
 	tpls *template.Template
 }
 
@@ -25,7 +25,7 @@ func (s *authService) guard(next httprouter.Handle) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-		s.log.Println("Auth Middleware Used")
+		s.log.Error("Auth Middleware Used")
 
 		authUser, ok := s.getAuthUser(r)
 
@@ -43,7 +43,7 @@ func (s *authService) guard(next httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func NewAuthService(db *sql.DB, logger *log.Logger, tpls *template.Template) *authService {
+func NewAuthService(db *sql.DB, logger *logrus.Logger, tpls *template.Template) *authService {
 	return &authService{db, logger, tpls}
 }
 
@@ -142,7 +142,7 @@ func (s *authService) registerUser(w http.ResponseWriter, r *http.Request, _ htt
 		}
 	}
 
-	s.log.Println("Creating user: ", name, email, password, username, photoPathToSave)
+	s.log.Error("Creating user: ", name, email, password, username, photoPathToSave)
 
 	stmt, err := s.db.Prepare(`
 INSERT into goissuez.users (name, email, password, username, photo_url, created_at, updated_at, last_login )
@@ -169,7 +169,7 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		return
 	}
 
-	s.log.Println("Created user - ", id)
+	s.log.Error("Created user - ", id)
 
 	// login
 	authUser, err := s.authenticateUser(username, password, s.db, w)
@@ -180,7 +180,7 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		return
 	}
 
-	s.log.Println("Logged in user", authUser)
+	s.log.Error("Logged in user", authUser)
 
 	ctx := context.WithValue(r.Context(), "user", authUser)
 
@@ -201,7 +201,7 @@ func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ ht
 		return
 	}
 
-	s.log.Println("Showing login form.")
+	s.log.Error("Showing login form.")
 	s.tpls.ExecuteTemplate(w, "users/loginform.gohtml", nil)
 }
 
@@ -220,7 +220,7 @@ func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
-	s.log.Println("Logged in user", authUser)
+	s.log.Error("Logged in user", authUser)
 
 	ctx := context.WithValue(r.Context(), "user", authUser)
 
@@ -238,7 +238,7 @@ func (s *authService) authenticateUser(
 	stmt, err := db.Prepare(`SELECT id, name, email, username, password, photo_url FROM goissuez.users u WHERE u.username = $1 LIMIT 1`)
 
 	if err != nil {
-		s.log.Println("Error ", err)
+		s.log.Error("Error ", err)
 		return user{}, err
 	}
 
@@ -247,7 +247,7 @@ func (s *authService) authenticateUser(
 	rows, err := stmt.Query(username)
 
 	if err != nil {
-		s.log.Println("Error ", err)
+		s.log.Error("Error ", err)
 		return user{}, err
 	}
 
@@ -267,7 +267,7 @@ func (s *authService) authenticateUser(
 		)
 
 		if err := rows.Scan(&id, &name, &email, &username, &password, &photo_url); err != nil {
-			s.log.Println("Error ", err)
+			s.log.Error("Error ", err)
 			return user{}, err
 		}
 
@@ -282,7 +282,7 @@ func (s *authService) authenticateUser(
 	}
 
 	if authUser == (user{}) {
-		s.log.Println("Error ", err)
+		s.log.Error("Error ", err)
 		return user{}, errors.New("Failed to login.")
 	}
 
@@ -292,14 +292,14 @@ func (s *authService) authenticateUser(
 	uuid, err := uuid.NewRandom()
 
 	if err != nil {
-		s.log.Println("Error ", err)
+		s.log.Error("Error ", err)
 		return user{}, err
 	}
 
 	stmt, err = db.Prepare(`INSERT into goissuez.sessions (uuid, user_id, created_at) values ($1, $2, CURRENT_TIMESTAMP) RETURNING user_id`)
 
 	if err != nil {
-		s.log.Println("Error ", err)
+		s.log.Error("Error ", err)
 		return user{}, err
 	}
 
@@ -312,7 +312,7 @@ func (s *authService) authenticateUser(
 		stmt, err := s.db.Prepare(`DELETE from goissuez.sessions WHERE user_id = $1 AND uuid != $2`)
 
 		if err != nil {
-			s.log.Println("Error s.db.Prepare() flushing sessions for user id: ", authUser.ID, err)
+			s.log.Error("Error s.db.Prepare() flushing sessions for user id: ", authUser.ID, err)
 
 			return
 		}
@@ -322,14 +322,14 @@ func (s *authService) authenticateUser(
 		_, err = stmt.Exec(authUser.ID, uuid.String())
 
 		if err != nil {
-			s.log.Println("Error stmt.Exec() flushing sessions for user id: ", authUser.ID, err)
+			s.log.Error("Error stmt.Exec() flushing sessions for user id: ", authUser.ID, err)
 		}
 	}()
 
 	_, err = stmt.Exec(uuid.String(), authUser.ID)
 
 	if err != nil {
-		s.log.Println("Error ", err)
+		s.log.Error("Error ", err)
 		return user{}, err
 	}
 
@@ -378,14 +378,14 @@ LIMIT 1
 	stmt, err := s.db.Prepare(sql)
 
 	if err != nil {
-		s.log.Println("Error Prepare getAuthUser: ", err)
+		s.log.Error("Error Prepare getAuthUser: ", err)
 		return user{}, false
 	}
 
 	rows, err := stmt.Query(cookie.Value)
 
 	if err != nil {
-		s.log.Println("Error Query getAuthUser: ", err)
+		s.log.Error("Error Query getAuthUser: ", err)
 		return user{}, false
 	}
 
