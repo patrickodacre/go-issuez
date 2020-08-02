@@ -33,7 +33,7 @@ func (s *projectService) index(w http.ResponseWriter, r *http.Request, _ httprou
 
 	authUser, _ := r.Context().Value("user").(user)
 
-	sql := `
+	query := `
 SELECT
 id,
 name,
@@ -45,7 +45,7 @@ FROM goissuez.projects
 WHERE user_id = $1
 ORDER BY created_at
 `
-	stmt, err := s.db.Prepare(sql)
+	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
 
@@ -58,7 +58,7 @@ ORDER BY created_at
 
 	defer stmt.Close()
 
-	rows, err := stmt.Query(authUser.ID)
+	rows, err := stmt.Query()
 
 	if err != nil {
 
@@ -122,13 +122,13 @@ func (s *projectService) store(w http.ResponseWriter, r *http.Request, _ httprou
 	projectName := r.PostForm.Get("name")
 	projectDescription := r.PostForm.Get("description")
 
-	sql := `
+	query := `
 INSERT INTO goissuez.projects
 (name, description, user_id, created_at, updated_at)
 VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 RETURNING id
 `
-	stmt, err := s.db.Prepare(sql)
+	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
 		s.log.Error("Error projects.store.prepare.", err)
@@ -165,7 +165,7 @@ func (s *projectService) update(w http.ResponseWriter, r *http.Request, ps httpr
 	projectName := r.PostForm.Get("name")
 	projectDescription := r.PostForm.Get("description")
 
-	sql := `
+	query := `
 UPDATE goissuez.projects
 SET
 name = $2,
@@ -174,7 +174,7 @@ updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 `
 
-	stmt, err := s.db.Prepare(sql)
+	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
 		s.log.Error("Error projects.update.prepare.", err)
@@ -202,7 +202,7 @@ WHERE id = $1
 func (s *projectService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	project_id := ps.ByName("project_id")
 
-	sql := `
+	query := `
 SELECT
 id,
 name,
@@ -212,7 +212,7 @@ FROM goissuez.projects
 WHERE id = $1
 LIMIT 1
 `
-	stmt, err := s.db.Prepare(sql)
+	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
 		s.log.Error("Error projects.edit.prepare.", err)
@@ -280,7 +280,7 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	sql := `
+	query := `
 SELECT
 id,
 name,
@@ -293,7 +293,7 @@ WHERE id = $1
 LIMIT 1
 `
 
-	stmt, err := s.db.Prepare(sql)
+	stmt, err := s.db.Prepare(query)
 
 	if err != nil {
 		s.log.Error("Error projects.show.prepare.", err)
