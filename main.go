@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -8,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"database/sql"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
