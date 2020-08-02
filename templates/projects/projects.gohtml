@@ -1,5 +1,4 @@
 {{define "content"}}
-    <h1>Projects</h1>
     <ul>
         {{range $k, $project := .Data.Projects}}
             <li><a href="projects/{{$project.ID}}">{{$project.Name}} - {{$project.Description}}</a></li>
