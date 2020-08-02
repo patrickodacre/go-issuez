@@ -3,7 +3,6 @@ package main
 import (
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -18,7 +17,6 @@ type page struct {
 type viewService struct {
 	w io.Writer
 	r *http.Request
-	log *log.Logger
 	t *template.Template
 }
 
@@ -31,7 +29,7 @@ func (s *viewService) make(filesnames ...string) {
 	_, err := tpls.ParseFiles(filesnames...)
 
 	if err != nil {
-		s.log.Println("Error parsing template files", err)
+		// return err
 	}
 
 	s.t = tpls

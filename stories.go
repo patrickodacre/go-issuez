@@ -139,7 +139,7 @@ ORDER BY created_at
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	view := viewService{w: w, r: r, log: s.log}
+	view := viewService{w: w, r: r}
 	view.make("templates/stories/stories.gohtml")
 	view.exec("main_layout", pageData)
 }
@@ -295,7 +295,7 @@ LIMIT 1
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	view := viewService{w: w, r: r, log: s.log}
+	view := viewService{w: w, r: r}
 	view.make("templates/stories/edit.gohtml")
 	view.exec("main_layout", pageData)
 }
@@ -356,7 +356,7 @@ LIMIT 1
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	view := viewService{w: w, r: r, log: s.log}
+	view := viewService{w: w, r: r}
 	view.make("templates/stories/new.gohtml")
 	view.exec("main_layout", pageData)
 }
@@ -449,7 +449,7 @@ LIMIT 1
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	view := viewService{w: w, r: r, log: s.log}
+	view := viewService{w: w, r: r}
 	view.make("templates/stories/story.gohtml")
 	view.exec("main_layout", pageData)
 }
