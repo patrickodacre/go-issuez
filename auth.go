@@ -49,7 +49,30 @@ func NewAuthService(db *sql.DB, logger *logrus.Logger, tpls *template.Template) 
 
 // Display a registration form.
 func (s *authService) showRegistrationForm(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	s.tpls.ExecuteTemplate(w, "users/new.gohtml", nil)
+
+	_, ok := r.Context().Value("user").(user)
+
+	if ok {
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+
+		return
+	}
+
+	pageData := page{Title: "Story Details", Data: nil}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, r: r}
+	view.make("templates/auth/registration-form.gohtml")
+	err := view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
 }
 
 func (s *authService) registerUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -201,8 +224,21 @@ func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ ht
 		return
 	}
 
-	s.log.Error("Showing login form.")
-	s.tpls.ExecuteTemplate(w, "users/loginform.gohtml", nil)
+	pageData := page{Title: "Login"}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	view := viewService{w: w, r: r}
+	view.make("templates/auth/loginform.gohtml")
+	err := view.exec("main_layout", pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
 }
 
 func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

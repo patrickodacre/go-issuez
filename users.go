@@ -208,16 +208,7 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 
 func (s *userService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-	// /users/new - register a new user
 	user_id := ps.ByName("id")
-
-	if user_id == "new" {
-		s.tpls.ExecuteTemplate(w, "users/new.gohtml", nil)
-
-		return
-	}
-
-	// otherwise, the intent is to visit a user profile page
 
 	// TODO: get user by id:
 	stmt, e1 := s.db.Prepare(`select * from goissuez.users where id = $1 limit 1`)
