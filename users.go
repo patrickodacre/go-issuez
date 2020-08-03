@@ -58,23 +58,28 @@ func (s *userService) index(w http.ResponseWriter, r *http.Request, _ httprouter
 	users := []user{}
 
 	for rows.Next() {
-		var (
-			id         int64
-			name       string
-			email      string
-			password   string
-			username   string
-			photo_url  sql.NullString
-			created_at string
-			updated_at string
-			last_login string
-		)
 
-		if err := rows.Scan(&id, &name, &email, &password, &username, &photo_url, &created_at, &updated_at, &last_login); err != nil {
+		userData := user{}
+		var photo_url sql.NullString
+
+		if err := rows.Scan(
+			&userData.ID,
+			&userData.Name,
+			&userData.Email,
+			&userData.Username,
+			&photo_url,
+			&userData.CreatedAt,
+			&userData.UpdatedAt,
+			&userData.LastLogin,
+		); err != nil {
 			log.Fatal(err)
 		}
 
-		users = append(users, user{ID: id, Name: name, Email: email, PhotoUrl: photo_url.String})
+		if photo_url.Valid {
+			userData.PhotoUrl = photo_url.String
+		}
+
+		users = append(users, userData)
 	}
 
 	err = s.tpls.ExecuteTemplate(w, "users/users.gohtml", struct{ Users []user }{users})
@@ -310,7 +315,6 @@ WHERE user_id = $1
 
 		projects = append(projects, projectData)
 	}
-
 
 	pageData := page{Title: "User Projects", Data: projects}
 
