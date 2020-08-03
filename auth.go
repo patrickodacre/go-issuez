@@ -61,7 +61,6 @@ func (s *authService) showRegistrationForm(w http.ResponseWriter, r *http.Reques
 	pageData := page{Title: "Story Details", Data: nil}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/auth/registration-form.gohtml")
@@ -73,6 +72,8 @@ func (s *authService) showRegistrationForm(w http.ResponseWriter, r *http.Reques
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *authService) registerUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -227,7 +228,6 @@ func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ ht
 	pageData := page{Title: "Login"}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/auth/loginform.gohtml")
@@ -239,6 +239,8 @@ func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ ht
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

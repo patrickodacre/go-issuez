@@ -137,7 +137,6 @@ ORDER BY created_at
 	pageData := page{Title: "Stories", Data: featureData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/stories.gohtml")
@@ -147,6 +146,8 @@ ORDER BY created_at
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *storyService) store(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -298,7 +299,6 @@ LIMIT 1
 	pageData := page{Title: "Story Details", Data: storyData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/edit.gohtml")
@@ -308,6 +308,8 @@ LIMIT 1
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // Show the new / create feature form.
@@ -364,7 +366,6 @@ LIMIT 1
 	pageData := page{Title: "Story Details", Data: featureData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/new.gohtml")
@@ -374,6 +375,8 @@ LIMIT 1
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *storyService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -462,7 +465,6 @@ LIMIT 1
 	pageData := page{Title: "Story Details", Data: storyData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/stories/story.gohtml")
@@ -472,6 +474,8 @@ LIMIT 1
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

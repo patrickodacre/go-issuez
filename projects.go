@@ -96,7 +96,6 @@ ORDER BY created_at
 	pageData := page{Title: "All Projects", Data: struct{Projects []project}{projects}}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/projects.gohtml")
@@ -108,6 +107,8 @@ ORDER BY created_at
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *projectService) store(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -243,7 +244,6 @@ LIMIT 1
 	pageData := page{Title: "Edit Project", Data: projectData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/edit.gohtml")
@@ -253,6 +253,8 @@ LIMIT 1
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -263,7 +265,6 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 		pageData := page{Title: "Create Project", Data: nil}
 
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-		w.WriteHeader(http.StatusOK)
 
 		view := viewService{w: w, r: r}
 		view.make("templates/projects/new.gohtml")
@@ -272,8 +273,11 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 		if err != nil {
 			s.log.Error(err)
 			http.Error(w, "Error", http.StatusInternalServerError)
+
+			return
 		}
 
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -327,7 +331,6 @@ LIMIT 1
 	pageData := page{Title: "Project Details", Data: projectData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/project.gohtml")
@@ -337,6 +340,8 @@ LIMIT 1
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

@@ -319,7 +319,6 @@ WHERE user_id = $1
 	pageData := page{Title: "User Projects", Data: projects}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/projects.gohtml")
@@ -332,6 +331,8 @@ WHERE user_id = $1
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *userService) features(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -339,7 +340,6 @@ func (s *userService) features(w http.ResponseWriter, r *http.Request, _ httprou
 	pageData := page{Title: "User Features", Data: nil}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/features.gohtml")
@@ -352,6 +352,8 @@ func (s *userService) features(w http.ResponseWriter, r *http.Request, _ httprou
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *userService) stories(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -359,7 +361,6 @@ func (s *userService) stories(w http.ResponseWriter, r *http.Request, _ httprout
 	pageData := page{Title: "User Stories", Data: nil}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/stories.gohtml")
@@ -372,6 +373,8 @@ func (s *userService) stories(w http.ResponseWriter, r *http.Request, _ httprout
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *userService) bugs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -379,7 +382,6 @@ func (s *userService) bugs(w http.ResponseWriter, r *http.Request, _ httprouter.
 	pageData := page{Title: "User Bugs", Data: nil}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/bugs.gohtml")
@@ -392,6 +394,8 @@ func (s *userService) bugs(w http.ResponseWriter, r *http.Request, _ httprouter.
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -399,7 +403,6 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 	pageData := page{Title: "User Dashboard", Data: nil}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/dashboard.gohtml")
@@ -412,6 +415,8 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *userService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

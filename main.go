@@ -74,7 +74,6 @@ func main() {
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-		w.WriteHeader(http.StatusOK)
 
 		view := viewService{w: w, r: r}
 		view.make("templates/index.gohtml")
@@ -87,6 +86,8 @@ func main() {
 
 			return
 		}
+
+		w.WriteHeader(http.StatusOK)
 	})
 
 	router.GET("/users", users.index)

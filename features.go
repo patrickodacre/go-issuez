@@ -127,7 +127,6 @@ ORDER BY f.created_at
 	pageData := page{Title: "Features", Data: projectData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/features.gohtml")
@@ -137,6 +136,8 @@ ORDER BY f.created_at
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // Save a project feature.
@@ -283,7 +284,6 @@ LIMIT 1
 	pageData := page{Title: "Edit Feature", Data: featureData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/edit.gohtml")
@@ -293,6 +293,8 @@ LIMIT 1
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // Show the new / create feature form.
@@ -349,7 +351,6 @@ LIMIT 1
 	pageData := page{Title: "Create Feature", Data: projectData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/new.gohtml")
@@ -359,6 +360,8 @@ LIMIT 1
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -420,7 +423,6 @@ LIMIT 1
 	pageData := page{Title: "Feature Details", Data: featureData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	view := viewService{w: w, r: r}
 	view.make("templates/features/feature.gohtml")
@@ -430,6 +432,8 @@ LIMIT 1
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *featureService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
