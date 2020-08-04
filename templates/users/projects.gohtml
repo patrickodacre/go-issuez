@@ -10,7 +10,7 @@
 
     <ul class="list-group">
         {{range $k, $project := .Data}}
-            <li class="list-group-item"><a href="projects/{{$project.ID}}">{{$project.Name}} - {{$project.Description}}</a></li>
+            <li class="list-group-item"><a href="/projects/{{$project.ID}}">{{$project.Name}} - {{$project.Description}}</a></li>
         {{end}}
     </ul>
     {{else}}
