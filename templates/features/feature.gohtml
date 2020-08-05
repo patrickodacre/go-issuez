@@ -1,57 +1,79 @@
+{{define "content_menu"}}
+    <a href="/projects/{{.Data.ProjectID}}" class="btn btn-sm btn-link mr-2">
+        <span data-feather="file"></span>
+        Project Details
+    </a>
+    <a href="/projects/{{.Data.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+        <span data-feather="edit"></span>
+        Edit
+    </a>
+    <button data-project-delete="{{.Data.ID}}" class="btn btn-sm btn-danger">
+        <span data-feather="delete"></span>
+        Delete
+    </button>
+{{end}}
 {{define "content"}}
-<h1>Feature Details</h1>
-
-<div>
-    <a href="/projects/{{.Data.ProjectID}}/features">Back to features list</a>
-</div>
-<div>
-    <a href="/features/{{.Data.ID}}/edit">EDIT</a>
+<div class="container mb-3">
+    {{.Data.Description}}
 </div>
 
-<ul>
-    <li>ID: {{.Data.ID}}</li>
-    <li>Name: {{.Data.Name}}</li>
-    <li>Description: {{.Data.Description}}</li>
-    <li>Project: {{.Data.Project.Name}}</li>
-</ul>
+<div class="card">
+    <div class="card-header">
+        Stories
+        <div class="actions">
+            <a href="/features/{{.Data.ID}}/stories/new" class="btn btn-sm btn-success" style="color: white;">
+                <span data-feather="plus"></span>
+                New
+            </a>
+        </div>
+    </div>
+    <ul class="list-group list-group-flush">
+        {{range $k, $story := .Data.Stories}}
+            <li class="list-group-item with-actions">
+                <a href="/stories/{{$story.ID}}">{{$story.Name}} - {{$story.Description}}</a>
+                <div class="actions">
+                    <a href="/stories/{{$story.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                        <span data-feather="edit"></span>
+                        Edit
+                    </a>
 
-<div>
-    <button data-feature-delete="{{.Data.ID}}">DELETE</button>
+                    <button type="button"
+                            class="btn btn-sm btn-danger"
+                            data-issuez-modal-trigger="story"
+                            data-story="{{(call $.Funcs.ToJSON $story)}}"
+                    >
+                        <span data-feather="delete"></span>
+                        Delete
+                    </button>
+
+                </div>
+            </li>
+        {{end}}
+    </ul>
 </div>
 
-<script>
-    window.onload = () => {
-        console.log('Loaded window')
-        const deleteButtons = document.querySelectorAll('[data-feature-delete]')
+<!-- Modal -->
+<div data-issuez-delete-modal="story" class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel" data-delete-modal-title>Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" data-delete-modal-content>
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
 
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', evt => {
-
-                const feature_id = evt.currentTarget.getAttribute('data-feature-delete')
-                var oReq = new XMLHttpRequest()
-
-                oReq.addEventListener("error", evt => {
-                    debugger
-                });
-
-                oReq.addEventListener("load", evt => {
-                    debugger
-
-                    location.href = "http://localhost:8080/projects/{{.Data.ProjectID}}/features"
-                })
-
-                oReq.open("DELETE", "http://localhost:8080/features/" + feature_id)
-                oReq.responseType = 'json'
-                oReq.send()
-
-                oReq.onload = evt => {
-
-                    debugger
-                }
-
-            })
-        })
-
-    }
-</script>
+                <button data-story-delete-confirm class="btn btn-danger">
+                    <span data-feather="delete"></span>
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {{end}}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"github.com/sirupsen/logrus"
 	"html/template"
 	"net/http"
@@ -420,7 +421,74 @@ LIMIT 1
 		return
 	}
 
-	pageData := page{Title: "Feature Details", Data: featureData}
+	// get the stories for the project
+	stmt, err = s.db.Prepare(`
+SELECT
+id,
+name,
+feature_id,
+created_at,
+updated_at
+FROM goissuez.stories
+WHERE feature_id = $1
+`)
+	if err != nil {
+		s.log.Error("Error features.show.prepare.stories.", err)
+
+		http.Error(w, "Error getting feature stories.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err := stmt.Query(feature_id)
+
+	if err != nil {
+		s.log.Error("Error features.show.query.stories.", err)
+
+		http.Error(w, "Error getting feature stories.", http.StatusInternalServerError)
+
+		return
+	}
+
+	stories := []story{}
+
+	for rows.Next() {
+
+		storyData := story{}
+
+		err := rows.Scan(
+			&storyData.ID,
+			&storyData.Name,
+			&storyData.FeatureID,
+			&storyData.CreatedAt,
+			&storyData.UpdatedAt,
+		)
+
+		if err != nil {
+
+			s.log.Error("Error features.show.scan.stories.", err)
+
+			http.Error(w, "Error getting feature stories.", http.StatusInternalServerError)
+
+			return
+		}
+
+		stories = append(stories, storyData)
+	}
+
+	featureData.Stories = stories
+
+	pageData := page{Title: featureData.Name, Data: featureData, Funcs: make(map[string]interface{})}
+
+	pageData.Funcs["ToJSON"] = func(storyData story) string {
+		b, err := json.Marshal(storyData)
+
+		if err != nil {
+			return ""
+		}
+
+		return string(b)
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 

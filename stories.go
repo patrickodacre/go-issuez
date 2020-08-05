@@ -188,7 +188,7 @@ RETURNING id
 		return
 	}
 
-	http.Redirect(w, r, "/features/"+feature_id+"/stories", http.StatusSeeOther)
+	http.Redirect(w, r, "/features/"+feature_id, http.StatusSeeOther)
 }
 
 func (s *storyService) update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -234,7 +234,7 @@ RETURNING feature_id
 		return
 	}
 
-	http.Redirect(w, r, "/features/"+feature_id+"/stories", http.StatusSeeOther)
+	http.Redirect(w, r, "/features/"+feature_id, http.StatusSeeOther)
 }
 
 func (s *storyService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
