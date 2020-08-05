@@ -6,9 +6,6 @@ import projectPageModule from './projectPageModule'
 
 window.onload = () => {
 
-    /* globals Chart:false, feather:false */
-    feather.replace()
-
     resources()
 
     projectPageModule()
