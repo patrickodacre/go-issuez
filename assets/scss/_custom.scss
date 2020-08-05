@@ -1,0 +1,19 @@
+.list-group-item.with-actions {
+    display: flex;
+    align-items: center;
+
+    > .actions {
+        margin-left: auto;
+    }
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+
+    > .actions {
+        margin-left: auto;
+    }
+}
+
+

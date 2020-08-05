@@ -2,8 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"html/template"
 	"github.com/sirupsen/logrus"
+	"html/template"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -179,7 +179,7 @@ RETURNING id
 		return
 	}
 
-	http.Redirect(w, r, "/projects/"+project_id+"/features", http.StatusSeeOther)
+	http.Redirect(w, r, "/projects/"+project_id, http.StatusSeeOther)
 }
 
 // Update a project feature.
@@ -348,7 +348,7 @@ LIMIT 1
 		return
 	}
 
-	pageData := page{Title: "Create Feature", Data: projectData}
+	pageData := page{Title: "Create " + projectData.Name + " Feature ", Data: projectData}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 

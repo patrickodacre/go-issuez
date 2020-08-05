@@ -1,7 +1,8 @@
-import './scss/index.scss';
-import 'bootstrap';
+import './scss/index.scss'
+import 'bootstrap'
 const feather = require('feather-icons')
 import resources from './resources'
+import projectPageModule from './projectPageModule'
 
 window.onload = () => {
 
@@ -9,4 +10,6 @@ window.onload = () => {
     feather.replace()
 
     resources()
+
+    projectPageModule()
 }

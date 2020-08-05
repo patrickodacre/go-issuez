@@ -2,10 +2,11 @@ package main
 
 import (
 	"database/sql"
-	"html/template"
 	"github.com/sirupsen/logrus"
+	"html/template"
 	"net/http"
 
+	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -93,7 +94,7 @@ ORDER BY created_at
 		projects = append(projects, projectData)
 	}
 
-	pageData := page{Title: "All Projects", Data: struct{Projects []project}{projects}}
+	pageData := page{Title: "All Projects", Data: struct{ Projects []project }{projects}}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
@@ -194,7 +195,7 @@ WHERE id = $1
 		return
 	}
 
-	http.Redirect(w, r, "/projects/" + project_id, http.StatusSeeOther)
+	http.Redirect(w, r, "/projects/"+project_id, http.StatusSeeOther)
 }
 
 func (s *projectService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -281,6 +282,7 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
+	// Get Project Details
 	query := `
 SELECT
 id,
@@ -308,7 +310,6 @@ LIMIT 1
 
 	row := stmt.QueryRow(project_id)
 
-
 	projectData := project{}
 
 	err = row.Scan(
@@ -328,12 +329,85 @@ LIMIT 1
 		return
 	}
 
-	pageData := page{Title: "Project Details", Data: projectData}
+	// Get Features for the Project
+
+	stmt, err = s.db.Prepare(`
+SELECT
+id,
+name,
+description,
+project_id,
+user_id,
+created_at,
+updated_at
+FROM goissuez.features
+WHERE project_id = $1
+`)
+
+	if err != nil {
+		s.log.Error("Error projects.show.prepare.features.", err)
+
+		http.Error(w, "Error getting project features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err := stmt.Query(project_id)
+
+	if err != nil {
+		s.log.Error("Error projects.show.query.features.", err)
+
+		http.Error(w, "Error getting project features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	features := []feature{}
+
+	for rows.Next() {
+		featureData := feature{}
+
+		err := rows.Scan(
+			&featureData.ID,
+			&featureData.Name,
+			&featureData.Description,
+			&featureData.ProjectID,
+			&featureData.UserID,
+			&featureData.CreatedAt,
+			&featureData.UpdatedAt,
+		)
+
+		if err != nil {
+
+			s.log.Error("Error projects.show.scan.features.", err)
+
+			http.Error(w, "Error getting project features.", http.StatusInternalServerError)
+
+			return
+		}
+
+		features = append(features, featureData)
+	}
+
+	projectData.Features = features
+
+	pageData := page{Title: projectData.Name, Data: projectData, Funcs: make(map[string]interface{})}
+
+	pageData.Funcs["ToJSON"] = func(featureData feature) string {
+		b, err := json.Marshal(featureData)
+
+		if err != nil {
+			return ""
+		}
+
+		return string(b)
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
 	view := viewService{w: w, r: r}
 	view.make("templates/projects/project.gohtml")
+
 	err = view.exec(mainLayout, pageData)
 
 	if err != nil {

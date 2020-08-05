@@ -7,11 +7,12 @@ import (
 )
 
 type page struct {
-	Title string
-	Data  interface{}
-	Content interface{}
-	AuthUser user
+	Title      string
+	Data       interface{}
+	Content    interface{}
+	AuthUser   user
 	IsLoggedIn bool
+	Funcs      map[string]interface{}
 }
 
 type viewService struct {
