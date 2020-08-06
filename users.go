@@ -444,3 +444,105 @@ func (s *userService) destroy(w http.ResponseWriter, r *http.Request, ps httprou
 	w.WriteHeader(200)
 	w.Write([]byte("Success"))
 }
+
+func getUserByID(db *sql.DB, user_id string) (user, error) {
+
+	stmt, err := db.Prepare(`
+SELECT
+id,
+name,
+username,
+photo_url,
+email,
+last_login
+FROM goissuez.users
+WHERE id = $1
+LIMIT 1
+`)
+
+	if err != nil {
+		return user{}, err
+	}
+
+	row := stmt.QueryRow(user_id)
+
+	userData := user{}
+
+	var photo_url sql.NullString
+
+	err = row.Scan(
+		&userData.ID,
+		&userData.Name,
+		&userData.Username,
+		&photo_url,
+		&userData.Email,
+		&userData.LastLogin,
+	)
+
+	if err != nil {
+		return user{}, err
+	}
+
+	if photo_url.Valid {
+		userData.PhotoUrl = photo_url.String
+	}
+
+	return userData, nil
+}
+
+func getUsers(db *sql.DB) ([]user, error) {
+	users := []user{}
+
+	stmt, err := db.Prepare(`
+SELECT
+id,
+name,
+email,
+username,
+photo_url,
+created_at,
+updated_at,
+last_login
+FROM goissuez.users
+ORDER BY created_at
+`)
+
+	if err != nil {
+		return []user{}, err
+	}
+
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+
+	if err != nil {
+		return []user{}, err
+	}
+
+	for rows.Next() {
+
+		userData := user{}
+		var photo_url sql.NullString
+
+		if err := rows.Scan(
+			&userData.ID,
+			&userData.Name,
+			&userData.Email,
+			&userData.Username,
+			&photo_url,
+			&userData.CreatedAt,
+			&userData.UpdatedAt,
+			&userData.LastLogin,
+		); err != nil {
+			return []user{}, err
+		}
+
+		if photo_url.Valid {
+			userData.PhotoUrl = photo_url.String
+		}
+
+		users = append(users, userData)
+	}
+
+	return users, nil
+}
