@@ -581,16 +581,90 @@ ORDER BY updated_at
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *userService) bugs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *userService) bugs(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-	pageData := page{Title: "User Bugs", Data: nil}
+	user_id := ps.ByName("user_id")
+	bugs := []bug{}
+	userData, err := getUserByID(s.db, user_id)
+
+	if err != nil {
+		s.log.Error("Error users.bugs.query.user.", err)
+
+		http.Error(w, "Error listing user bugs.", http.StatusInternalServerError)
+
+		return
+	}
+
+	stmt, err := s.db.Prepare(`
+SELECT
+id,
+name,
+assignee_id,
+created_at,
+updated_at
+FROM goissuez.bugs
+WHERE assignee_id = $1
+ORDER BY updated_at
+`)
+
+	if err != nil {
+		s.log.Error("Error users.bugs.prepare.", err)
+
+		http.Error(w, "Error listing user bugs.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err := stmt.Query(user_id)
+
+	if err != nil {
+		s.log.Error("Error users.bugs.query.", err)
+
+		http.Error(w, "Error listing user bugs.", http.StatusInternalServerError)
+
+		return
+	}
+
+	for rows.Next() {
+
+		bugData := bug{}
+
+		err := rows.Scan(
+			&bugData.ID,
+			&bugData.Name,
+			&bugData.AssigneeID,
+			&bugData.CreatedAt,
+			&bugData.UpdatedAt,
+		)
+
+		if err != nil {
+			s.log.Error("Error users.bugs.scan.", err)
+
+			http.Error(w, "Error listing user bugs.", http.StatusInternalServerError)
+
+			return
+		}
+
+		bugs = append(bugs, bugData)
+	}
+
+	pageData := page{
+		Title: userData.Name + " - Bugs",
+		Data: struct {
+			Bugs  []bug
+			Assignee user
+		}{
+			bugs,
+			userData,
+		},
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/bugs.gohtml")
 
-	err := view.exec("dashboard_layout", pageData)
+	err = view.exec("dashboard_layout", pageData)
 
 	if err != nil {
 		s.log.Error(err)
