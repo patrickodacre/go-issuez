@@ -332,7 +332,6 @@ func (s *storyService) update(w http.ResponseWriter, r *http.Request, ps httprou
 	description := r.PostForm.Get("description")
 	assignee_id := r.PostForm.Get("assignee_id")
 
-	// return the feature_id so we can redirect back to the feature / stories page
 	query := `
 UPDATE goissuez.stories
 SET name = $2, description = $3, assignee_id = $4, updated_at = CURRENT_TIMESTAMP
