@@ -24,13 +24,108 @@ type feature struct {
 	UserID      int64
 	CreatedAt   string
 	UpdatedAt   string
-	Project     project
+	Project     *project
 	Stories     []story
 	Bugs        []bug
 }
 
 func NewFeatureService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *featureService {
 	return &featureService{db, log, tpls}
+}
+
+func (s *featureService) all(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	features := []struct{
+		Feature feature
+		RelatedData struct{StoryCount int; BugCount int;}
+	}{}
+
+	stmt, err := s.db.Prepare(`
+SELECT
+f.id,
+f.name,
+f.user_id,
+f.created_at,
+f.updated_at,
+count(DISTINCT s.id) as count_stories,
+count(DISTINCT b.id) as count_bugs,
+p.name as project_name
+FROM goissuez.features f
+LEFT JOIN goissuez.stories s
+ON f.id = s.feature_id
+LEFT JOIN goissuez.bugs b
+ON f.id = b.feature_id
+JOIN goissuez.projects p
+ON p.id = f.project_id
+GROUP BY f.id, p.id
+ORDER BY f.updated_at
+`)
+
+	if err != nil {
+		s.log.Error("Error features.all.prepare.", err)
+		http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err := stmt.Query()
+
+	if err != nil {
+		s.log.Error("Error features.all.query.", err)
+		http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	for rows.Next() {
+		featureData := struct{
+			Feature feature
+			RelatedData struct{
+				StoryCount int
+				BugCount int
+			}
+		}{
+			feature{Project: &project{}},
+			struct{StoryCount int; BugCount int;}{0, 0,},
+		}
+
+		err := rows.Scan(
+			&featureData.Feature.ID,
+			&featureData.Feature.Name,
+			&featureData.Feature.UserID,
+			&featureData.Feature.CreatedAt,
+			&featureData.Feature.UpdatedAt,
+			&featureData.RelatedData.StoryCount,
+			&featureData.RelatedData.BugCount,
+			&featureData.Feature.Project.Name,
+		)
+
+		if err != nil {
+			s.log.Error("Error features.all.scan.", err)
+			http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+			return
+		}
+
+		features = append(features, featureData)
+	}
+
+	pageData := page{
+		Title: "Features",
+		Data: features,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+
+	view := viewService{w: w, r: r}
+	view.make("templates/features/all.gohtml")
+	err = view.exec(mainLayout, pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // Show all features for a given project.
@@ -402,7 +497,7 @@ LIMIT 1
 
 	row := stmt.QueryRow(feature_id)
 
-	featureData := feature{}
+	featureData := feature{Project: &project{}}
 
 	err = row.Scan(
 		&featureData.ID,

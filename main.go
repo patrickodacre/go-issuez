@@ -120,6 +120,7 @@ func main() {
 	router.DELETE("/projects/:project_id", auth.guard(projects.destroy))
 
 	// features are the parent issue type that will have child stories and bugs
+	router.GET("/features", auth.guard(features.all))
 	router.GET("/projects/:project_id/features", auth.guard(features.index))
 	router.POST("/projects/:project_id/features", auth.guard(features.store))
 

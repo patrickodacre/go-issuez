@@ -1,0 +1,29 @@
+{{define "content"}}
+<ul class="list-group">
+    {{range $k, $featureData := .Data}}
+        <li class="list-group-item with-actions">
+            <div class="name">
+                <a href="/features/{{$featureData.Feature.ID}}">{{$featureData.Feature.Name}}</a>
+            </div>
+            <div class="details">
+                <div class="project">
+                    Project: {{$featureData.Feature.Project.Name}}
+                </div>
+                <div class="storyCount">
+                    Story Count: {{$featureData.RelatedData.StoryCount}}
+                </div>
+                <div class="bugCount">
+                    Bug Count: {{$featureData.RelatedData.BugCount}}
+                </div>
+            </div>
+            <div class="actions">
+                <a href="/features/{{$featureData.Feature.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                    <span data-feather="edit"></span>
+                    Edit
+                </a>
+            </div>
+
+        </li>
+    {{end}}
+</ul>
+{{end}}
