@@ -6,9 +6,9 @@
     <a href="/projects/{{.Data.ID}}">Back to project</a>
 </div>
 
-<ul>
+<ul class="list-group">
     {{range $k, $feature := .Data.Features}}
-        <li><a href="/features/{{$feature.ID}}">{{$feature.Name}} - {{$feature.Description}}</a></li>
+        <li class="list-group-item"><a href="/features/{{$feature.ID}}">{{$feature.Name}} - {{$feature.Description}}</a></li>
     {{end}}
 </ul>
 {{end}}

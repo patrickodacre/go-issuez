@@ -5,9 +5,11 @@
     </button>
 {{end}}
 {{define "content"}}
-    <ul class="list-group">
-        {{range $k, $project := .Data.Projects}}
-            <li class="list-group-item"><a href="projects/{{$project.ID}}">{{$project.Name}} - {{$project.Description}}</a></li>
-        {{end}}
-    </ul>
+    <div class="container">
+        <ul class="list-group">
+            {{range $k, $project := .Data.Projects}}
+                <li class="list-group-item with-actions"><a href="projects/{{$project.ID}}">{{$project.Name}} - {{$project.Description}}</a></li>
+            {{end}}
+        </ul>
+    </div>
 {{end}}
