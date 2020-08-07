@@ -52,7 +52,7 @@ f.name as feature_name
 FROM goissuez.stories s
 JOIN goissuez.features f
 ON f.id = s.feature_id
-ORDER BY updated_at
+ORDER BY s.updated_at
 `)
 
 	if err != nil {
