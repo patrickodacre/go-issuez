@@ -41,13 +41,17 @@ func (s *storyService) all(w http.ResponseWriter, r *http.Request, _ httprouter.
 
 	stmt, err := s.db.Prepare(`
 SELECT
-id,
-name,
-user_id,
-assignee_id,
-created_at,
-updated_at
-FROM goissuez.stories
+s.id,
+s.name,
+s.feature_id,
+s.user_id,
+s.assignee_id,
+s.created_at,
+s.updated_at,
+f.name as feature_name
+FROM goissuez.stories s
+JOIN goissuez.features f
+ON f.id = s.feature_id
 ORDER BY updated_at
 `)
 
@@ -68,17 +72,19 @@ ORDER BY updated_at
 	}
 
 	for rows.Next() {
-		storyData := story{}
+		storyData := story{Feature: &feature{}}
 
 		var assignee_id sql.NullInt64
 
 		err := rows.Scan(
 			&storyData.ID,
 			&storyData.Name,
+			&storyData.FeatureID,
 			&storyData.UserID,
 			&assignee_id,
 			&storyData.CreatedAt,
 			&storyData.UpdatedAt,
+			&storyData.Feature.Name,
 		)
 
 		if err != nil {
