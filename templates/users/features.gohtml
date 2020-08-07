@@ -1,5 +1,36 @@
 {{define "content"}}
 
-These are the features for user {{.AuthUser.ID}} - {{.AuthUser.Name}}
+    {{if .Data.Features }}
+    <div class="container mb-3">
+        {{.Data.Assignee.Name}} is involved with the following features:
+    </div>
+
+    <div class="container">
+        <ul class="list-group">
+            {{range $k, $feature := .Data.Features}}
+                <li class="list-group-item with-actions">
+                    <div class="name">
+                        <a href="/features/{{$feature.ID}}">{{$feature.Name}}</a>
+                    </div>
+                    <div class="details">
+                    </div>
+                    <div class="actions">
+                        <a href="/features/{{$feature.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                            <span data-feather="edit"></span>
+                            Edit
+                        </a>
+                    </div>
+                </li>
+            {{end}}
+        </ul>
+
+    </div>
+    {{else}}
+
+    <div class="container mb-3">
+        {{.Data.Assignee.Name}} is not involved with any features.
+    </div>
+
+    {{end}}
 
 {{end}}

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/lib/pq"
 )
 
 type userService struct {
@@ -335,16 +336,144 @@ WHERE user_id = $1
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *userService) features(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+// List the features with which this user is involved.
+// A user is involved in a feature if they are assigned
+// to either a story or a bug associated with that feature.
+func (s *userService) features(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user_id := ps.ByName("user_id")
+	feature_ids := []int64{}
+	features := []feature{}
+	userData, err := getUserByID(s.db, user_id)
 
-	pageData := page{Title: "User Features", Data: nil}
+	if err != nil {
+		s.log.Error("Error users.features.query.user.", err)
+
+		http.Error(w, "Error listing user features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	stmt, err := s.db.Prepare(`
+SELECT
+b.feature_id as bug_feature_id,
+s.feature_id as story_feature_id
+FROM
+   (SELECT DISTINCT feature_id FROM goissuez.bugs b WHERE b.assignee_id = $1 ) b
+   FULL OUTER JOIN
+   	(SELECT DISTINCT feature_id FROM goissuez.stories s WHERE s.assignee_id = $1) s
+   ON b.feature_id = s.feature_id
+`)
+
+	if err != nil {
+		s.log.Error("Error users.features.prepare.feature_ids.", err)
+
+		http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err := stmt.Query(user_id)
+
+	if err != nil {
+		s.log.Error("Error users.features.query.feature_ids.", err)
+
+		http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	for rows.Next() {
+
+		var bugFeatureID sql.NullInt64
+		var storyFeatureID sql.NullInt64
+
+		if err := rows.Scan(
+			&bugFeatureID,
+			&storyFeatureID,
+		); err != nil {
+			s.log.Error("Error users.features.scan.", err)
+
+			http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+			return
+		}
+
+		if bugFeatureID.Valid {
+			feature_ids = append(feature_ids, bugFeatureID.Int64)
+		} else if storyFeatureID.Valid {
+			feature_ids = append(feature_ids, storyFeatureID.Int64)
+		}
+
+	}
+
+	stmt, err = s.db.Prepare(`
+SELECT
+id,
+name,
+description,
+created_at,
+updated_at
+FROM goissuez.features
+WHERE id = ANY($1)
+`)
+
+	if err != nil {
+		s.log.Error("Error users.features.prepare.", err)
+
+		http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err = stmt.Query(pq.Array(feature_ids))
+
+	if err != nil {
+		s.log.Error("Error users.features.query.", err)
+
+		http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+		return
+	}
+
+	for rows.Next() {
+		featureData := feature{}
+
+		err := rows.Scan(
+			&featureData.ID,
+			&featureData.Name,
+			&featureData.Description,
+			&featureData.CreatedAt,
+			&featureData.UpdatedAt,
+		)
+
+		if err != nil {
+			s.log.Error("Error users.features.scan.", err)
+
+			http.Error(w, "Error listing features.", http.StatusInternalServerError)
+
+			return
+		}
+
+		features = append(features, featureData)
+	}
+
+	pageData := page{
+		Title: "User Features",
+		Data: struct {
+			Features []feature
+			Assignee user
+		}{
+			features,
+			userData,
+		},
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/features.gohtml")
 
-	err := view.exec("dashboard_layout", pageData)
+	err = view.exec("dashboard_layout", pageData)
 
 	if err != nil {
 		s.log.Error(err)
