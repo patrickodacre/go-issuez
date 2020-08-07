@@ -485,16 +485,90 @@ WHERE id = ANY($1)
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *userService) stories(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *userService) stories(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-	pageData := page{Title: "User Stories", Data: nil}
+	user_id := ps.ByName("user_id")
+	stories := []story{}
+	userData, err := getUserByID(s.db, user_id)
+
+	if err != nil {
+		s.log.Error("Error users.stories.query.user.", err)
+
+		http.Error(w, "Error listing user stories.", http.StatusInternalServerError)
+
+		return
+	}
+
+	stmt, err := s.db.Prepare(`
+SELECT
+id,
+name,
+assignee_id,
+created_at,
+updated_at
+FROM goissuez.stories
+WHERE assignee_id = $1
+ORDER BY updated_at
+`)
+
+	if err != nil {
+		s.log.Error("Error users.stories.prepare.", err)
+
+		http.Error(w, "Error listing user stories.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err := stmt.Query(user_id)
+
+	if err != nil {
+		s.log.Error("Error users.stories.query.", err)
+
+		http.Error(w, "Error listing user stories.", http.StatusInternalServerError)
+
+		return
+	}
+
+	for rows.Next() {
+
+		storyData := story{}
+
+		err := rows.Scan(
+			&storyData.ID,
+			&storyData.Name,
+			&storyData.AssigneeID,
+			&storyData.CreatedAt,
+			&storyData.UpdatedAt,
+		)
+
+		if err != nil {
+			s.log.Error("Error users.stories.scan.", err)
+
+			http.Error(w, "Error listing user stories.", http.StatusInternalServerError)
+
+			return
+		}
+
+		stories = append(stories, storyData)
+	}
+
+	pageData := page{
+		Title: "Stories for " + userData.Name,
+		Data: struct {
+			Stories  []story
+			Assignee user
+		}{
+			stories,
+			userData,
+		},
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/stories.gohtml")
 
-	err := view.exec("dashboard_layout", pageData)
+	err = view.exec("dashboard_layout", pageData)
 
 	if err != nil {
 		s.log.Error(err)
