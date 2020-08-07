@@ -130,6 +130,7 @@ func main() {
 	router.DELETE("/features/:feature_id", auth.guard(features.destroy))
 
 	// Stories
+	router.GET("/stories", auth.guard(stories.all))
 	router.GET("/features/:feature_id/stories", auth.guard(stories.index))
 	router.POST("/features/:feature_id/stories", auth.guard(stories.store))
 

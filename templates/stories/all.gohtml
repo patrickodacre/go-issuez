@@ -1,0 +1,31 @@
+{{define "content"}}
+<ul class="list-group">
+    {{range $k, $story := .Data.Stories}}
+        <li class="list-group-item with-actions">
+            <div class="name">
+                <a href="/stories/{{$story.ID}}">{{$story.Name}}</a>
+            </div>
+            <div class="details">
+                <div class="createdBy">
+                    Created By: {{$story.Creator.Name}}
+                </div>
+                <div class="assignedTo">
+                    Assigned To: 
+                    {{if $story.Assignee}}
+                        {{$story.Assignee.Name}}
+                    {{else}}
+                        Unassigned
+                    {{end}}
+                </div>
+            </div>
+            <div class="actions">
+                <a href="/stories/{{$story.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                    <span data-feather="edit"></span>
+                    Edit
+                </a>
+            </div>
+
+        </li>
+    {{end}}
+</ul>
+{{end}}

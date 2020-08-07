@@ -35,6 +35,117 @@ func NewStoryService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *s
 	return &storyService{db, log, tpls}
 }
 
+func (s *storyService) all(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	stories := []story{}
+
+	stmt, err := s.db.Prepare(`
+SELECT
+id,
+name,
+user_id,
+assignee_id,
+created_at,
+updated_at
+FROM goissuez.stories
+ORDER BY updated_at
+`)
+
+	if err != nil {
+		s.log.Error("Error stories.all.prepare.", err)
+		http.Error(w, "Error listing stories.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err := stmt.Query()
+
+	if err != nil {
+		s.log.Error("Error stories.all.query.", err)
+		http.Error(w, "Error listing stories.", http.StatusInternalServerError)
+
+		return
+	}
+
+	for rows.Next() {
+		storyData := story{}
+
+		var assignee_id sql.NullInt64
+
+		err := rows.Scan(
+			&storyData.ID,
+			&storyData.Name,
+			&storyData.UserID,
+			&assignee_id,
+			&storyData.CreatedAt,
+			&storyData.UpdatedAt,
+		)
+
+		if err != nil {
+			s.log.Error("Error stories.all.scan.", err)
+			http.Error(w, "Error listing stories.", http.StatusInternalServerError)
+
+			return
+		}
+
+		if assignee_id.Valid {
+			storyData.AssigneeID = assignee_id.Int64
+		}
+
+		stories = append(stories, storyData)
+	}
+
+	users, err := getUsers(s.db)
+
+	usersByID := make(map[int64]*user)
+
+	if err == nil {
+		for i := 0; i < len(users); i++ {
+			usersByID[users[i].ID] = &users[i]
+		}
+	}
+
+	for i := 0; i < len(stories); i++ {
+
+		// make sure we're mutating the actual story
+		// in the slice
+		story := &stories[i]
+
+		creator, ok := usersByID[story.UserID]
+
+		if ok {
+			story.Creator = creator
+		}
+
+		assignee, ok := usersByID[story.AssigneeID]
+
+		if ok {
+			story.Assignee = assignee
+		}
+	}
+
+	pageData := page{
+		Title: "Stories",
+		Data: struct {
+			Stories []story
+		}{
+			stories,
+		},
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+
+	view := viewService{w: w, r: r}
+	view.make("templates/stories/all.gohtml")
+	err = view.exec(mainLayout, pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // Show all stories for a given feature.
 // First, we'll get the feature details, and then
 // we'll query the related stories separately.
