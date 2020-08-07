@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -24,8 +25,8 @@ type story struct {
 	AssigneeID  int64
 	CreatedAt   string
 	UpdatedAt   string
-	Creator     user
-	Assignee    user
+	Creator     *user
+	Assignee    *user
 	Feature     feature
 	Project     project
 }
@@ -392,20 +393,8 @@ s.feature_id,
 s.user_id,
 s.assignee_id,
 s.created_at,
-s.updated_at,
-f.name as feature_name,
-creator.name as creator_name,
-assignee.name as assignee_name
-
+s.updated_at
 FROM goissuez.stories s
-
-JOIN goissuez.features as f
-on f.id = s.feature_id
-LEFT JOIN goissuez.users as creator
-on creator.id = s.user_id
-LEFT JOIN goissuez.users as assignee
-on assignee.id = s.assignee_id
-
 WHERE s.id = $1
 LIMIT 1
 `
@@ -427,7 +416,6 @@ LIMIT 1
 	storyData := story{}
 
 	// this could be null if there is no assignee
-	var assigneeName sql.NullString
 	var assigneeID sql.NullInt64
 
 	err = row.Scan(
@@ -439,9 +427,6 @@ LIMIT 1
 		&assigneeID,
 		&storyData.CreatedAt,
 		&storyData.UpdatedAt,
-		&storyData.Feature.Name,
-		&storyData.Creator.Name,
-		&assigneeName,
 	)
 
 	if err != nil {
@@ -452,15 +437,23 @@ LIMIT 1
 		return
 	}
 
-	if assigneeName.Valid {
-		storyData.Assignee.Name = assigneeName.String
-	} else {
-		storyData.Assignee.Name = "Not Assigned"
-	}
-
 	if assigneeID.Valid {
 		storyData.AssigneeID = assigneeID.Int64
+
+		id := strconv.FormatInt(assigneeID.Int64, 10)
+
+		assignee, err := getUserByID(s.db, id)
+
+		if err != nil {
+			s.log.Error("Error stories.show.getUserByID", err)
+		} else {
+			storyData.Assignee = &assignee
+		}
 	}
+
+	creator, err := getUserByID(s.db, strconv.FormatInt(storyData.UserID, 10))
+
+	storyData.Creator = &creator
 
 	pageData := page{Title: "Story Details", Data: storyData}
 
