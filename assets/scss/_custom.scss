@@ -5,6 +5,22 @@
     > .actions {
         margin-left: auto;
     }
+
+    > .details {
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+
+        + .actions {
+            margin-left: 2rem;
+        }
+
+        > *:nth-last-child(n+2) {
+            padding-right: 0.5rem;
+            margin-right: 0.5rem;
+            border-right: 1px solid #ddd;
+        }
+    }
 }
 
 .card-header {
