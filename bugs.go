@@ -36,6 +36,123 @@ func NewBugService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *bug
 	return &bugService{db, log, tpls}
 }
 
+func (s *bugService) all(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	bugs := []bug{}
+
+	stmt, err := s.db.Prepare(`
+SELECT
+b.id,
+b.name,
+b.feature_id,
+b.user_id,
+b.assignee_id,
+b.created_at,
+b.updated_at,
+f.name as feature_name
+FROM goissuez.bugs b
+JOIN goissuez.features f
+ON f.id = b.feature_id
+ORDER BY b.updated_at
+`)
+
+	if err != nil {
+		s.log.Error("Error bugs.all.prepare.", err)
+		http.Error(w, "Error listing bugs.", http.StatusInternalServerError)
+
+		return
+	}
+
+	rows, err := stmt.Query()
+
+	if err != nil {
+		s.log.Error("Error bugs.all.query.", err)
+		http.Error(w, "Error listing bugs.", http.StatusInternalServerError)
+
+		return
+	}
+
+	for rows.Next() {
+		bugData := bug{Feature: &feature{}}
+
+		var assignee_id sql.NullInt64
+
+		err := rows.Scan(
+			&bugData.ID,
+			&bugData.Name,
+			&bugData.FeatureID,
+			&bugData.UserID,
+			&assignee_id,
+			&bugData.CreatedAt,
+			&bugData.UpdatedAt,
+			&bugData.Feature.Name,
+		)
+
+		if err != nil {
+			s.log.Error("Error bugs.all.scan.", err)
+			http.Error(w, "Error listing bugs.", http.StatusInternalServerError)
+
+			return
+		}
+
+		if assignee_id.Valid {
+			bugData.AssigneeID = assignee_id.Int64
+		}
+
+		bugs = append(bugs, bugData)
+	}
+
+	users, err := getUsers(s.db)
+
+	usersByID := make(map[int64]*user)
+
+	if err == nil {
+		for i := 0; i < len(users); i++ {
+			usersByID[users[i].ID] = &users[i]
+		}
+	}
+
+	for i := 0; i < len(bugs); i++ {
+
+		// make sure we're mutating the actual bug
+		// in the slice
+		bug := &bugs[i]
+
+		creator, ok := usersByID[bug.UserID]
+
+		if ok {
+			bug.Creator = creator
+		}
+
+		assignee, ok := usersByID[bug.AssigneeID]
+
+		if ok {
+			bug.Assignee = assignee
+		}
+	}
+
+	pageData := page{
+		Title: "Bugs",
+		Data: struct {
+			Bugs []bug
+		}{
+			bugs,
+		},
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+
+	view := viewService{w: w, r: r}
+	view.make("templates/bugs/all.gohtml")
+	err = view.exec(mainLayout, pageData)
+
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (s *bugService) index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	featureData := feature{}

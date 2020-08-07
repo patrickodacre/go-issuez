@@ -141,6 +141,7 @@ func main() {
 	router.DELETE("/stories/:story_id", auth.guard(stories.destroy))
 
 	// Bugs
+	router.GET("/bugs", auth.guard(bugs.all))
 	router.GET("/features/:feature_id/bugs", auth.guard(bugs.index))
 	router.POST("/features/:feature_id/bugs", auth.guard(bugs.store))
 

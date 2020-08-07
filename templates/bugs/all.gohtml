@@ -1,0 +1,34 @@
+{{define "content"}}
+<ul class="list-group">
+    {{range $k, $bug := .Data.Bugs}}
+        <li class="list-group-item with-actions">
+            <div class="name">
+                <a href="/bugs/{{$bug.ID}}">{{$bug.Name}}</a>
+            </div>
+            <div class="details">
+                <div class="feature">
+                    Feature: {{$bug.Feature.Name}}
+                </div>
+                <div class="createdBy">
+                    Created By: {{$bug.Creator.Name}}
+                </div>
+                <div class="assignedTo">
+                    Assigned To: 
+                    {{if $bug.Assignee}}
+                        {{$bug.Assignee.Name}}
+                    {{else}}
+                        Unassigned
+                    {{end}}
+                </div>
+            </div>
+            <div class="actions">
+                <a href="/bugs/{{$bug.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                    <span data-feather="edit"></span>
+                    Edit
+                </a>
+            </div>
+
+        </li>
+    {{end}}
+</ul>
+{{end}}
