@@ -27,8 +27,8 @@ type story struct {
 	UpdatedAt   string
 	Creator     *user
 	Assignee    *user
-	Feature     feature
-	Project     project
+	Feature     *feature
+	Project     *project
 }
 
 func NewStoryService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *storyService {
