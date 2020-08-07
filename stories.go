@@ -2,8 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"html/template"
 	"github.com/sirupsen/logrus"
+	"html/template"
 	"net/http"
 	"strconv"
 
