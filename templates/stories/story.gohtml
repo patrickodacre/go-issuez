@@ -7,70 +7,62 @@
         <span data-feather="file"></span>
         All Stories
     </a>
-    <a href="/stories/{{.Data.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
-        <span data-feather="edit"></span>
-        Edit
-    </a>
-    <button data-story-delete="{{.Data.ID}}" class="btn btn-sm btn-danger">
-        <span data-feather="delete"></span>
-        Delete
-    </button>
 {{end}}
 
 {{define "content"}}
-<div>
-    <a href="/features/{{.Data.FeatureID}}/stories">Back to stories list</a>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">#{{.Data.ID}} - {{.Data.Name}}</h5>
+
+        <h6 class="card-subtitle mb-2 text-muted">Created By: {{.Data.Creator.Name}}</h6>
+        {{if .Data.Assignee}}
+        <h6 class="card-subtitle mb-2 text-muted">Assigned To: {{.Data.Assignee.Name}}</h6>
+        {{else}}
+        <h6 class="card-subtitle mb-2 text-muted">Assigned To: Unassigned</h6>
+        {{end}}
+        <p class="card-text">{{.Data.Description}}</p>
+        <div class="card-actions">
+            <a href="/stories/{{.Data.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                <span data-feather="edit"></span>
+                Edit
+            </a>
+            <button data-story-delete="{{(call .Funcs.ToJSON .Data)}}" class="btn btn-sm btn-danger">
+                <span data-feather="delete"></span>
+                Delete
+            </button>
+        </div>
+    </div>
 </div>
-<div>
-    <a href="/stories/{{.Data.ID}}/edit">EDIT</a>
+
+<!-- Modal -->
+<div data-issuez-delete-modal="story" class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel" data-delete-modal-title>Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" data-delete-modal-content>
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+
+                <button data-story-delete-confirm class="btn btn-danger">
+                    <span data-feather="delete"></span>
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
-<ul>
-    <li>ID: {{.Data.ID}}</li>
-    <li>Name: {{.Data.Name}}</li>
-    <li>Description: {{.Data.Description}}</li>
-    <li>Feature: {{.Data.Feature.Name}}</li>
-    <li>Created By: {{.Data.Creator.Name}}</li>
-    <li>Assignee: {{.Data.Assignee.Name}}</li>
-</ul>
+{{end}}
 
-<div>
-    <button data-story-delete="{{.Data.ID}}">DELETE</button>
-</div>
-
-<script>
-    window.onload = () => {
-        console.log('Loaded window')
-        const deleteButtons = document.querySelectorAll('[data-story-delete]')
-
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', evt => {
-
-                const story_id = evt.currentTarget.getAttribute('data-story-delete')
-                var oReq = new XMLHttpRequest()
-
-                oReq.addEventListener("error", evt => {
-                    debugger
-                });
-
-                oReq.addEventListener("load", evt => {
-                    debugger
-
-                    location.href = "http://localhost:8080/features/{{.Data.FeatureID}}/stories"
-                })
-
-                oReq.open("DELETE", "http://localhost:8080/stories/" + story_id)
-                oReq.responseType = 'json'
-                oReq.send()
-
-                oReq.onload = evt => {
-
-                    debugger
-                }
-
-            })
-        })
-
-    }
-</script>
+{{define "scripts"}}
+    <script>
+     window.storyPageModule()
+    </script>
 {{end}}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -272,11 +273,12 @@ func (s *storyService) store(w http.ResponseWriter, r *http.Request, ps httprout
 
 	name := r.PostForm.Get("name")
 	description := r.PostForm.Get("description")
+	assignee_id := r.PostForm.Get("assignee_id")
 
 	query := `
 INSERT INTO goissuez.stories
-(name, description, feature_id, user_id, created_at, updated_at)
-VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+(name, description, feature_id, user_id, assignee_id, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 RETURNING id
 `
 	stmt, err := s.db.Prepare(query)
@@ -291,7 +293,24 @@ RETURNING id
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(name, description, feature_id, authUser.ID)
+	var assignee sql.NullInt64
+
+	if assignee_id == "0" {
+		assignee = sql.NullInt64{}
+	} else {
+		v, err := strconv.ParseInt(assignee_id, 10, 64)
+
+		if err != nil {
+			assignee = sql.NullInt64{}
+		}
+
+		assignee = sql.NullInt64{
+			Int64: v,
+			Valid: true,
+		}
+	}
+
+	_, err = stmt.Exec(name, description, feature_id, authUser.ID, assignee)
 
 	if err != nil {
 		s.log.Error("Error stories.store.queryrow.", err)
@@ -311,13 +330,13 @@ func (s *storyService) update(w http.ResponseWriter, r *http.Request, ps httprou
 
 	name := r.PostForm.Get("name")
 	description := r.PostForm.Get("description")
+	assignee_id := r.PostForm.Get("assignee_id")
 
 	// return the feature_id so we can redirect back to the feature / stories page
 	query := `
 UPDATE goissuez.stories
-SET name = $2, description = $3, updated_at = CURRENT_TIMESTAMP
+SET name = $2, description = $3, assignee_id = $4, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING feature_id
 `
 
 	stmt, err := s.db.Prepare(query)
@@ -332,11 +351,24 @@ RETURNING feature_id
 
 	defer stmt.Close()
 
-	var (
-		feature_id string
-	)
+	var assignee sql.NullInt64
 
-	err = stmt.QueryRow(story_id, name, description).Scan(&feature_id)
+	if assignee_id == "0" {
+		assignee = sql.NullInt64{}
+	} else {
+		v, err := strconv.ParseInt(assignee_id, 10, 64)
+
+		if err != nil {
+			assignee = sql.NullInt64{}
+		} else {
+			assignee = sql.NullInt64{
+				Int64: v,
+				Valid: true,
+			}
+		}
+	}
+
+	_, err = stmt.Exec(story_id, name, description, assignee)
 
 	if err != nil {
 		s.log.Error("Error stories.update.exec.", err)
@@ -346,7 +378,7 @@ RETURNING feature_id
 		return
 	}
 
-	http.Redirect(w, r, "/features/"+feature_id, http.StatusSeeOther)
+	http.Redirect(w, r, "/stories/"+story_id, http.StatusSeeOther)
 }
 
 func (s *storyService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -408,7 +440,18 @@ LIMIT 1
 		storyData.AssigneeID = assigneeID.Int64
 	}
 
-	pageData := page{Title: "Story Details", Data: storyData}
+	users, _ := getUsers(s.db)
+
+	pageData := page{
+		Title: "Edit Story - " + storyData.Name,
+		Data: struct {
+			Story story
+			Users []user
+		}{
+			storyData,
+			users,
+		},
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
@@ -475,7 +518,12 @@ LIMIT 1
 		return
 	}
 
-	pageData := page{Title: "Story Details", Data: featureData}
+	users, _ := getUsers(s.db)
+
+	pageData := page{Title: "Create a Story for " + featureData.Name, Data: struct {
+		Feature feature
+		Users   []user
+	}{Feature: featureData, Users: users}}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
@@ -504,8 +552,12 @@ s.feature_id,
 s.user_id,
 s.assignee_id,
 s.created_at,
-s.updated_at
+s.updated_at,
+f.id,
+f.name
 FROM goissuez.stories s
+JOIN goissuez.features f
+ON f.id = s.feature_id
 WHERE s.id = $1
 LIMIT 1
 `
@@ -524,7 +576,7 @@ LIMIT 1
 
 	row := stmt.QueryRow(story_id)
 
-	storyData := story{}
+	storyData := story{Feature: &feature{}}
 
 	// this could be null if there is no assignee
 	var assigneeID sql.NullInt64
@@ -538,6 +590,8 @@ LIMIT 1
 		&assigneeID,
 		&storyData.CreatedAt,
 		&storyData.UpdatedAt,
+		&storyData.Feature.ID,
+		&storyData.Feature.Name,
 	)
 
 	if err != nil {
@@ -564,9 +618,23 @@ LIMIT 1
 
 	creator, err := getUserByID(s.db, strconv.FormatInt(storyData.UserID, 10))
 
-	storyData.Creator = &creator
+	if err != nil {
+		s.log.Error("Error stories.show.getUserByID", err)
+	} else {
+		storyData.Creator = &creator
+	}
 
-	pageData := page{Title: "Story Details", Data: storyData}
+	pageData := page{Title: "Story Details", Data: storyData, Funcs: make(map[string]interface{})}
+
+	pageData.Funcs["ToJSON"] = func(storyData story) string {
+		b, err := json.Marshal(storyData)
+
+		if err != nil {
+			return ""
+		}
+
+		return string(b)
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
