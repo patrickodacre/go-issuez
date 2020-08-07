@@ -313,7 +313,7 @@ RETURNING id
 	_, err = stmt.Exec(name, description, feature_id, authUser.ID, assignee)
 
 	if err != nil {
-		s.log.Error("Error stories.store.queryrow.", err)
+		s.log.Error("Error stories.store.exec.", err)
 
 		http.Error(w, "Error saving story.", http.StatusInternalServerError)
 		return
