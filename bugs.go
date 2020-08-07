@@ -24,10 +24,10 @@ type bug struct {
 	AssigneeID  int64
 	CreatedAt   string
 	UpdatedAt   string
-	Creator     user
-	Assignee    user
-	Feature     feature
-	Project     project
+	Creator     *user
+	Assignee    *user
+	Feature     *feature
+	Project     *project
 }
 
 func NewBugService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *bugService {
