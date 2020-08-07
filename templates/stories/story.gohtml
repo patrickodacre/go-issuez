@@ -1,6 +1,23 @@
-{{define "content"}}
-<h1>Story Details</h1>
+{{define "content_menu"}}
+    <a href="/users/{{.AuthUser.ID}}/stories" class="btn btn-sm btn-link mr-2">
+        <span data-feather="file"></span>
+        My Stories
+    </a>
+    <a href="/stories" class="btn btn-sm btn-link mr-2">
+        <span data-feather="file"></span>
+        All Stories
+    </a>
+    <a href="/stories/{{.Data.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+        <span data-feather="edit"></span>
+        Edit
+    </a>
+    <button data-story-delete="{{.Data.ID}}" class="btn btn-sm btn-danger">
+        <span data-feather="delete"></span>
+        Delete
+    </button>
+{{end}}
 
+{{define "content"}}
 <div>
     <a href="/features/{{.Data.FeatureID}}/stories">Back to stories list</a>
 </div>
