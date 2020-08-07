@@ -41,8 +41,8 @@
 
                         <button type="button"
                                 class="btn btn-sm btn-danger"
-                                data-issuez-modal-trigger="story"
-                                data-story="{{(call $.Funcs.ToJSON $story)}}"
+                                data-delete-trigger="story"
+                                data-entity="{{(call $.Funcs.ToJSON $story)}}"
                         >
                             <span data-feather="delete"></span>
                             Delete
@@ -78,8 +78,8 @@
 
                         <button type="button"
                                 class="btn btn-sm btn-danger"
-                                data-issuez-modal-trigger="bug"
-                                data-bug="{{(call $.Funcs.ToJSON $bug)}}"
+                                data-delete-trigger="bug"
+                                data-entity="{{(call $.Funcs.ToJSON $bug)}}"
                         >
                             <span data-feather="delete"></span>
                             Delete
@@ -93,7 +93,7 @@
 </div>
 
 <!-- Modal -->
-<div data-issuez-delete-modal="story" class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div data-issuez-delete-modal class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -108,7 +108,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
 
-                <button data-story-delete-confirm class="btn btn-danger">
+                <button data-delete-confirm class="btn btn-danger">
                     <span data-feather="delete"></span>
                     Confirm
                 </button>

@@ -2,39 +2,27 @@ import env from './env'
 import axios from 'axios'
 
 export default () => {
-    const triggers = document.querySelectorAll('[data-issuez-modal-trigger="story"]')
+    const delete_triggers = document.querySelectorAll('[data-delete-trigger]')
 
-    const $modal = $('[data-issuez-delete-modal="story"]')
+    const $modal = $('[data-issuez-delete-modal]')
 
-    let targetStory = null
     let deleteConfirmBtn = null
+    let context = {
+        entity_type: null,
+        entity_data: null,
+    }
 
-    $modal.on('hidden.bs.modal', function (e) {
-        deleteConfirmBtn.removeEventListener('click', confirmDelete)
-    })
-
-    $modal.on('show.bs.modal', function (e) {
-        deleteConfirmBtn = document.querySelector('[data-story-delete-confirm]')
-
-        const content = document.querySelector('[data-delete-modal-content]')
-        const title = document.querySelector('[data-delete-modal-title]')
-
-        title.innerHTML = "Delete " + (targetStory.Name || '')
-
-        content.innerHTML = 'Are you sure?'
-
-        deleteConfirmBtn.addEventListener('click', confirmDelete)
-    })
-
-    triggers.forEach(trigger => {
+    delete_triggers.forEach(trigger => {
         trigger.addEventListener('click', evt => {
 
-            const story = evt.currentTarget
+            // set context
+            const triggerEl = evt.currentTarget
 
-            const storyDataRaw = story.getAttribute('data-story')
+            context.entity_type = triggerEl.getAttribute('data-delete-trigger')
+            const entityRaw = triggerEl.getAttribute('data-entity')
 
-            targetStory = storyDataRaw
-                ? JSON.parse(storyDataRaw)
+            context.entity_data = entityRaw
+                ? JSON.parse(entityRaw)
                 : {}
 
             $modal.modal('show')
@@ -43,12 +31,43 @@ export default () => {
 
     function confirmDelete() {
 
-        axios.delete(`${env.APP_URL}/stories/${targetStory.ID}`)
+        const urls = {
+            story: `${env.APP_URL}/stories/${context.entity_data.ID}`,
+            bug: `${env.APP_URL}/bugs/${context.entity_data.ID}`,
+        }
+
+        const url = urls[context.entity_type]
+
+        if (!url) {
+            console.error('Error: cannot delete entity ' + context.entity_type)
+            return
+        }
+
+        axios.delete(url)
             .then(resp => {
-                window.location.href = `${env.APP_URL}/features/${targetStory.FeatureID}`
+                window.location.href = `${env.APP_URL}/features/${context.entity_data.FeatureID}`
             })
             .catch(err => {
                 console.log(err)
             })
     }
+
+    // Modal Events
+    $modal.on('hidden.bs.modal', function (e) {
+        deleteConfirmBtn.removeEventListener('click', confirmDelete)
+    })
+
+    $modal.on('show.bs.modal', function (e) {
+        // update modal content
+        const content = document.querySelector('[data-delete-modal-content]')
+        const title = document.querySelector('[data-delete-modal-title]')
+
+        title.innerHTML = "Delete " + (context.entity_data.Name || '')
+
+        content.innerHTML = 'Are you sure?'
+
+        // delete confirmation
+        deleteConfirmBtn = document.querySelector('[data-delete-confirm]')
+        deleteConfirmBtn.addEventListener('click', confirmDelete)
+    })
 }
