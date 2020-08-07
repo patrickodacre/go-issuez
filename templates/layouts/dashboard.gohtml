@@ -1,5 +1,5 @@
-{{define "content_menu"}}
-{{end}}
+{{define "content_menu"}}{{end}}
+{{define "scripts"}}{{end}}
 {{define "dashboard_layout"}}
 <!doctype html>
 <html lang="en">
@@ -176,6 +176,8 @@
         </div>
 
         <script src="/resources/bundle.js"></script>
+
+        {{ template "scripts" . }}
     </body>
 </html>
 
