@@ -23,6 +23,7 @@ type user struct {
 	ID        int64
 	Name      string
 	Username  string
+	Password  string
 	PhotoUrl  string
 	Email     string
 	CreatedAt string
