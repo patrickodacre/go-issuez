@@ -368,6 +368,7 @@ LIMIT 1
 func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	feature_id := ps.ByName("feature_id")
+	stories := []story{}
 
 	sql := `
 SELECT
@@ -422,61 +423,62 @@ LIMIT 1
 	}
 
 	// get the stories for the project
-	stmt, err = s.db.Prepare(`
-SELECT
-id,
-name,
-feature_id,
-created_at,
-updated_at
-FROM goissuez.stories
-WHERE feature_id = $1
-`)
-	if err != nil {
-		s.log.Error("Error features.show.prepare.stories.", err)
-
-		http.Error(w, "Error getting feature stories.", http.StatusInternalServerError)
-
-		return
-	}
-
-	rows, err := stmt.Query(feature_id)
-
-	if err != nil {
-		s.log.Error("Error features.show.query.stories.", err)
-
-		http.Error(w, "Error getting feature stories.", http.StatusInternalServerError)
-
-		return
-	}
-
-	stories := []story{}
-
-	for rows.Next() {
-
-		storyData := story{}
-
-		err := rows.Scan(
-			&storyData.ID,
-			&storyData.Name,
-			&storyData.FeatureID,
-			&storyData.CreatedAt,
-			&storyData.UpdatedAt,
-		)
+	{
+		stmt, err := s.db.Prepare(`
+			SELECT
+			id,
+			name,
+			feature_id,
+			created_at,
+			updated_at
+			FROM goissuez.stories
+			WHERE feature_id = $1
+		`)
 
 		if err != nil {
-
-			s.log.Error("Error features.show.scan.stories.", err)
+			s.log.Error("Error features.show.prepare.stories.", err)
 
 			http.Error(w, "Error getting feature stories.", http.StatusInternalServerError)
 
 			return
 		}
 
-		stories = append(stories, storyData)
-	}
+		rows, err := stmt.Query(feature_id)
 
-	featureData.Stories = stories
+		if err != nil {
+			s.log.Error("Error features.show.query.stories.", err)
+
+			http.Error(w, "Error getting feature stories.", http.StatusInternalServerError)
+
+			return
+		}
+
+		for rows.Next() {
+
+			storyData := story{}
+
+			err := rows.Scan(
+				&storyData.ID,
+				&storyData.Name,
+				&storyData.FeatureID,
+				&storyData.CreatedAt,
+				&storyData.UpdatedAt,
+			)
+
+			if err != nil {
+
+				s.log.Error("Error features.show.scan.stories.", err)
+
+				http.Error(w, "Error getting feature stories.", http.StatusInternalServerError)
+
+				return
+			}
+
+			stories = append(stories, storyData)
+		}
+
+		featureData.Stories = stories
+	}
 
 	pageData := page{Title: featureData.Name, Data: featureData, Funcs: make(map[string]interface{})}
 
