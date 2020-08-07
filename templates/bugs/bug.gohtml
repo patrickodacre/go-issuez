@@ -1,69 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Bug</title>
-    </head>
-    <body>
+{{define "content_menu"}}
+    <a href="/users/{{.AuthUser.ID}}/bugs" class="btn btn-sm btn-link mr-2">
+        <span data-feather="file"></span>
+        My Bugs
+    </a>
+    <a href="/bugs" class="btn btn-sm btn-link mr-2">
+        <span data-feather="file"></span>
+        All Bugs
+    </a>
+{{end}}
 
+{{define "content"}}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">#{{.Data.ID}} - {{.Data.Name}}</h5>
 
-        <h1>Bug Details</h1>
-
-        <div>
-            <a href="/features/{{.FeatureID}}/bugs">Back to bugs list</a>
+        <h6 class="card-subtitle mb-2 text-muted">Created By: {{.Data.Creator.Name}}</h6>
+        {{if .Data.Assignee}}
+        <h6 class="card-subtitle mb-2 text-muted">Assigned To: {{.Data.Assignee.Name}}</h6>
+        {{else}}
+        <h6 class="card-subtitle mb-2 text-muted">Assigned To: Unassigned</h6>
+        {{end}}
+        <p class="card-text">{{.Data.Description}}</p>
+        <div class="card-actions">
+            <a href="/bugs/{{.Data.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                <span data-feather="edit"></span>
+                Edit
+            </a>
+            <button data-bug-delete="{{(call .Funcs.ToJSON .Data)}}" class="btn btn-sm btn-danger">
+                <span data-feather="delete"></span>
+                Delete
+            </button>
         </div>
-        <div>
-            <a href="/bugs/{{.ID}}/edit">EDIT</a>
+    </div>
+</div>
+
+<!-- Modal -->
+<div data-issuez-delete-modal="bug" class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel" data-delete-modal-title>Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" data-delete-modal-content>
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+
+                <button data-bug-delete-confirm class="btn btn-danger">
+                    <span data-feather="delete"></span>
+                    Confirm
+                </button>
+            </div>
         </div>
+    </div>
+</div>
 
-        <ul>
-            <li>ID: {{.ID}}</li>
-            <li>Name: {{.Name}}</li>
-            <li>Description: {{.Description}}</li>
-            <li>Feature: {{.Feature.Name}}</li>
-            <li>Created By: {{.Creator.Name}}</li>
-            <li>Assignee: {{.Assignee.Name}}</li>
-        </ul>
+{{end}}
 
-        <div>
-            <button data-bug-delete="{{.ID}}">DELETE</button>
-        </div>
-
-        <script>
-         window.onload = () => {
-             console.log('Loaded window')
-             const deleteButtons = document.querySelectorAll('[data-bug-delete]')
-
-             deleteButtons.forEach(button => {
-                 button.addEventListener('click', evt => {
-
-                     const bug_id = evt.currentTarget.getAttribute('data-bug-delete')
-                     var oReq = new XMLHttpRequest()
-
-                     oReq.addEventListener("error", evt => {
-                         debugger
-                     });
-
-                     oReq.addEventListener("load", evt => {
-                         debugger
-
-                         location.href = "http://localhost:8080/features/{{.FeatureID}}/bugs"
-                     })
-
-                     oReq.open("DELETE", "http://localhost:8080/bugs/" + bug_id)
-                     oReq.responseType = 'json'
-                     oReq.send()
-
-                     oReq.onload = evt => {
-
-                         debugger
-                     }
-
-                 })
-             })
-
-         }
-        </script>
-    </body>
-</html>
-
+{{define "scripts"}}
+    <script>
+     window.bugPageModule()
+    </script>
+{{end}}

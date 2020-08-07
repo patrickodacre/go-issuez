@@ -17,39 +17,78 @@
     {{.Data.Description}}
 </div>
 
-<div class="card">
-    <div class="card-header">
-        Stories
-        <div class="actions">
-            <a href="/features/{{.Data.ID}}/stories/new" class="btn btn-sm btn-success" style="color: white;">
-                <span data-feather="plus"></span>
-                New
-            </a>
+<div class="container mb-3">
+    <div class="card">
+        <div class="card-header">
+            Stories
+            <div class="actions">
+                <a href="/features/{{.Data.ID}}/stories/new" class="btn btn-sm btn-success" style="color: white;">
+                    <span data-feather="plus"></span>
+                    New
+                </a>
+            </div>
         </div>
+        <ul class="list-group list-group-flush">
+            {{range $k, $story := .Data.Stories}}
+                <li class="list-group-item with-actions">
+                    <a href="/stories/{{$story.ID}}">{{$story.Name}} - {{$story.Description}}</a>
+                    <div class="actions">
+                        <a href="/stories/{{$story.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                            <span data-feather="edit"></span>
+                            Edit
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-issuez-modal-trigger="story"
+                                data-story="{{(call $.Funcs.ToJSON $story)}}"
+                        >
+                            <span data-feather="delete"></span>
+                            Delete
+                        </button>
+
+                    </div>
+                </li>
+            {{end}}
+        </ul>
     </div>
-    <ul class="list-group list-group-flush">
-        {{range $k, $story := .Data.Stories}}
-            <li class="list-group-item with-actions">
-                <a href="/stories/{{$story.ID}}">{{$story.Name}} - {{$story.Description}}</a>
-                <div class="actions">
-                    <a href="/stories/{{$story.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
-                        <span data-feather="edit"></span>
-                        Edit
-                    </a>
+</div>
 
-                    <button type="button"
-                            class="btn btn-sm btn-danger"
-                            data-issuez-modal-trigger="story"
-                            data-story="{{(call $.Funcs.ToJSON $story)}}"
-                    >
-                        <span data-feather="delete"></span>
-                        Delete
-                    </button>
+<div class="container mb-3">
+    <div class="card">
+        <div class="card-header">
+            Bugs
+            <div class="actions">
+                <a href="/features/{{.Data.ID}}/bugs/new" class="btn btn-sm btn-success" style="color: white;">
+                    <span data-feather="plus"></span>
+                    New
+                </a>
+            </div>
+        </div>
+        <ul class="list-group list-group-flush">
+            {{range $k, $bug := .Data.Bugs}}
+                <li class="list-group-item with-actions">
+                    <a href="/bugs/{{$bug.ID}}">{{$bug.Name}} - {{$bug.Description}}</a>
+                    <div class="actions">
+                        <a href="/bugs/{{$bug.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                            <span data-feather="edit"></span>
+                            Edit
+                        </a>
 
-                </div>
-            </li>
-        {{end}}
-    </ul>
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-issuez-modal-trigger="bug"
+                                data-bug="{{(call $.Funcs.ToJSON $bug)}}"
+                        >
+                            <span data-feather="delete"></span>
+                            Delete
+                        </button>
+
+                    </div>
+                </li>
+            {{end}}
+        </ul>
+    </div>
 </div>
 
 <!-- Modal -->

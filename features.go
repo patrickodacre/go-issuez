@@ -369,6 +369,7 @@ func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprou
 
 	feature_id := ps.ByName("feature_id")
 	stories := []story{}
+	bugs := []bug{}
 
 	sql := `
 SELECT
@@ -480,10 +481,81 @@ LIMIT 1
 		featureData.Stories = stories
 	}
 
+	// get the bugs for the project
+	{
+		stmt, err := s.db.Prepare(`
+			SELECT
+			id,
+			name,
+			feature_id,
+			created_at,
+			updated_at
+			FROM goissuez.bugs
+			WHERE feature_id = $1
+		`)
+
+		if err != nil {
+			s.log.Error("Error features.show.prepare.bugs.", err)
+
+			http.Error(w, "Error getting feature bugs.", http.StatusInternalServerError)
+
+			return
+		}
+
+		rows, err := stmt.Query(feature_id)
+
+		if err != nil {
+			s.log.Error("Error features.show.query.bugs.", err)
+
+			http.Error(w, "Error getting feature bugs.", http.StatusInternalServerError)
+
+			return
+		}
+
+		for rows.Next() {
+
+			bugData := bug{}
+
+			err := rows.Scan(
+				&bugData.ID,
+				&bugData.Name,
+				&bugData.FeatureID,
+				&bugData.CreatedAt,
+				&bugData.UpdatedAt,
+			)
+
+			if err != nil {
+
+				s.log.Error("Error features.show.scan.bugs.", err)
+
+				http.Error(w, "Error getting feature bugs.", http.StatusInternalServerError)
+
+				return
+			}
+
+			bugs = append(bugs, bugData)
+		}
+
+		featureData.Bugs = bugs
+	}
+
 	pageData := page{Title: featureData.Name, Data: featureData, Funcs: make(map[string]interface{})}
 
-	pageData.Funcs["ToJSON"] = func(storyData story) string {
-		b, err := json.Marshal(storyData)
+	pageData.Funcs["ToJSON"] = func(data interface{}) string {
+
+		var storyData story
+		var bugData bug
+		var b []byte
+		var err error
+
+		bugData, bug_ok := data.(bug)
+		storyData, story_ok := data.(story)
+
+		if bug_ok {
+			b, err = json.Marshal(bugData)
+		} else if story_ok {
+			b, err = json.Marshal(storyData)
+		}
 
 		if err != nil {
 			return ""
