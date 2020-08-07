@@ -147,10 +147,13 @@ ORDER BY s.updated_at
 
 	if err != nil {
 		s.log.Error(err)
+
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 // Show all stories for a given feature.
@@ -264,9 +267,11 @@ ORDER BY created_at
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *storyService) store(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -467,9 +472,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 // Show the new / create feature form.
@@ -539,9 +546,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *storyService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -650,9 +659,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

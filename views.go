@@ -2,8 +2,8 @@ package main
 
 import (
 	"html/template"
-	"io"
 	"net/http"
+	"bytes"
 )
 
 type page struct {
@@ -16,9 +16,10 @@ type page struct {
 }
 
 type viewService struct {
-	w io.Writer
+	w http.ResponseWriter
 	r *http.Request
 	t *template.Template
+	b *bytes.Buffer
 }
 
 func (s *viewService) make(filesnames ...string) {
@@ -52,5 +53,14 @@ func (s *viewService) exec(layout string, data interface{}) error {
 		pageData.IsLoggedIn = false
 	}
 
-	return s.t.ExecuteTemplate(s.w, layout, pageData)
+	s.b = bufpool.Get()
+
+	return s.t.ExecuteTemplate(s.b, layout, pageData)
+}
+
+func (s *viewService) send(status int) {
+	s.w.WriteHeader(status)
+	s.b.WriteTo(s.w)
+
+	defer bufpool.Put(s.b)
 }

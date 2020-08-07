@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+	"github.com/oxtoacart/bpool"
 )
 
 var tpls *template.Template
@@ -24,6 +25,11 @@ var stories *storyService
 var bugs *bugService
 var log *logrus.Logger
 var mainLayout string
+var bufpool *bpool.BufferPool
+
+func init() {
+	bufpool = bpool.NewBufferPool(64)
+}
 
 func main() {
 

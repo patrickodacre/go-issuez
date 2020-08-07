@@ -148,9 +148,11 @@ ORDER BY b.updated_at
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *bugService) index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -262,9 +264,11 @@ ORDER BY created_at
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *bugService) store(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -465,9 +469,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 // Show the new / create feature form.
@@ -537,9 +543,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *bugService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -648,9 +656,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *bugService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

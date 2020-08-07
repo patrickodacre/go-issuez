@@ -123,9 +123,11 @@ ORDER BY f.updated_at
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 // Show all features for a given project.
@@ -231,9 +233,11 @@ ORDER BY f.created_at
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 // Save a project feature.
@@ -388,9 +392,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 // Show the new / create feature form.
@@ -455,9 +461,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -668,9 +676,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *featureService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

@@ -334,7 +334,7 @@ WHERE user_id = $1
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 // List the features with which this user is involved.
@@ -483,7 +483,7 @@ WHERE id = ANY($1)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *userService) stories(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -578,7 +578,7 @@ ORDER BY updated_at
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *userService) bugs(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -673,7 +673,7 @@ ORDER BY updated_at
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -694,7 +694,7 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *userService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

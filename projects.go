@@ -109,7 +109,7 @@ ORDER BY created_at
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *projectService) store(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -253,9 +253,11 @@ LIMIT 1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -278,7 +280,7 @@ func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprou
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		view.send(http.StatusOK)
 		return
 	}
 
@@ -413,9 +415,11 @@ WHERE project_id = $1
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

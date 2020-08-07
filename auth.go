@@ -73,7 +73,7 @@ func (s *authService) showRegistrationForm(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *authService) registerUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -240,7 +240,7 @@ func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ ht
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	view.send(http.StatusOK)
 }
 
 func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
