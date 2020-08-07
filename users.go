@@ -459,7 +459,7 @@ WHERE id = ANY($1)
 	}
 
 	pageData := page{
-		Title: "User Features",
+		Title: userData.Name + " - Features",
 		Data: struct {
 			Features []feature
 			Assignee user
@@ -554,7 +554,7 @@ ORDER BY updated_at
 	}
 
 	pageData := page{
-		Title: "Stories for " + userData.Name,
+		Title: userData.Name + " - Stories",
 		Data: struct {
 			Stories  []story
 			Assignee user
