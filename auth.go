@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/sirupsen/logrus"
 	"html/template"
 	"io/ioutil"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -197,13 +197,13 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 
 	err = stmt.QueryRow(name, email, password, username, photoPathToSave).Scan(&id)
 
-	if handleError(err, "Failed to query  row.") {
+	if handleError(err, "Failed to query row.") {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
 
-	s.log.Error("Created user - ", id)
+	s.log.Info("Created user - ", id)
 
 	// login
 	authUser, err := s.authenticateUser(username, password, s.db, w)
@@ -220,7 +220,7 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		return
 	}
 
-	s.log.Error("Logged in user", authUser)
+	s.log.Info("Logged in user", authUser)
 
 	ctx := context.WithValue(r.Context(), "user", authUser)
 
