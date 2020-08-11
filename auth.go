@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type authService struct {
@@ -115,7 +116,16 @@ func (s *authService) registerUser(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	if len(form_passwords) > 0 && form_passwords[0] != "" {
-		password = form_passwords[0]
+		pb := []byte(form_passwords[0])
+
+		b, err := bcrypt.GenerateFromPassword(pb, bcrypt.DefaultCost)
+
+		if err != nil {
+			http.Error(w, "There was an error saving your password.", http.StatusUnprocessableEntity)
+			return
+		}
+
+		password = string(b)
 	} else {
 		http.Error(w, "PASSWORD is required.", http.StatusUnprocessableEntity)
 		return
@@ -199,6 +209,12 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 	authUser, err := s.authenticateUser(username, password, s.db, w)
 
 	if err != nil {
+		if err.Error() == "unauthorized" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+
+			return
+		}
+
 		http.Error(w, "Cannot login.", http.StatusInternalServerError)
 
 		return
@@ -253,6 +269,12 @@ func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httpro
 	authUser, err := s.authenticateUser(username, password, s.db, w)
 
 	if err != nil {
+		if err.Error() == "unauthorized" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+
+			return
+		}
+
 		http.Error(w, "Cannot login.", http.StatusInternalServerError)
 
 		return
@@ -324,7 +346,10 @@ func (s *authService) authenticateUser(
 		return user{}, errors.New("Failed to login.")
 	}
 
-	// TODO: compare password
+	if err := bcrypt.CompareHashAndPassword([]byte(authUser.Password), []byte(password)); err != nil {
+		e := errors.New("unauthorized")
+		return user{}, e
+	}
 
 	// update the session:
 	uuid, err := uuid.NewRandom()
