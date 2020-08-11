@@ -651,7 +651,7 @@ ORDER BY updated_at
 	pageData := page{
 		Title: userData.Name + " - Bugs",
 		Data: struct {
-			Bugs  []bug
+			Bugs     []bug
 			Assignee user
 		}{
 			bugs,
