@@ -288,12 +288,7 @@ func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httpro
 }
 
 // Update sessions table with a new session UUID and SetCookie
-func (s *authService) authenticateUser(
-	username string,
-	password string,
-	db *sql.DB,
-	w http.ResponseWriter,
-) (user, error) {
+func (s *authService) authenticateUser(username string, password string, db *sql.DB, w http.ResponseWriter) (user, error) {
 
 	stmt, err := db.Prepare(`SELECT id, name, email, username, password, photo_url FROM goissuez.users u WHERE u.username = $1 LIMIT 1`)
 
@@ -304,44 +299,21 @@ func (s *authService) authenticateUser(
 
 	defer stmt.Close()
 
-	rows, err := stmt.Query(username)
-
-	if err != nil {
-		s.log.Error("Error ", err)
-		return user{}, err
-	}
+	row := stmt.QueryRow(username)
 
 	var authUser user
+	var photo_url sql.NullString
 
-	for rows.Next() {
-		var (
-			id        int64
-			name      string
-			email     string
-			username  string
-			password  string
-			photo_url sql.NullString
-			// created_at string
-			// updated_at string
-			// last_login string
-		)
+	err = row.Scan(
+		&authUser.ID,
+		&authUser.Name,
+		&authUser.Email,
+		&authUser.Username,
+		&authUser.Password,
+		&photo_url,
+	)
 
-		if err := rows.Scan(&id, &name, &email, &username, &password, &photo_url); err != nil {
-			s.log.Error("Error ", err)
-			return user{}, err
-		}
-
-		authUser = user{
-			ID:       id,
-			Name:     name,
-			Email:    email,
-			Username: username,
-			PhotoUrl: photo_url.String,
-			Password: password,
-		}
-	}
-
-	if authUser == (user{}) {
+	if err != nil {
 		s.log.Error("Error ", err)
 		return user{}, errors.New("Failed to login.")
 	}
@@ -349,6 +321,10 @@ func (s *authService) authenticateUser(
 	if err := bcrypt.CompareHashAndPassword([]byte(authUser.Password), []byte(password)); err != nil {
 		e := errors.New("unauthorized")
 		return user{}, e
+	}
+
+	if photo_url.Valid {
+		authUser.PhotoUrl = photo_url.String
 	}
 
 	// update the session:
