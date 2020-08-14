@@ -20,15 +20,19 @@ type userService struct {
 }
 
 type user struct {
-	ID        int64
-	Name      string
-	Username  string
-	Password  string
-	PhotoUrl  string
-	Email     string
-	CreatedAt string
-	UpdatedAt string
-	LastLogin string
+	ID          int64
+	Name        string
+	Username    string
+	Password    string
+	PhotoUrl    string
+	Email       string
+	CreatedAt   string
+	UpdatedAt   string
+	LastLogin   string
+	IsAdmin     bool
+	RoleID      int64
+	Role        role
+	Permissions map[string]capability
 }
 
 func NewUserService(db *sql.DB, logger *logrus.Logger, tpls *template.Template) *userService {

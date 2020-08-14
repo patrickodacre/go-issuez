@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"html/template"
 	"net/http"
-	"bytes"
 )
 
 type page struct {
@@ -12,6 +12,7 @@ type page struct {
 	Content    interface{}
 	AuthUser   user
 	IsLoggedIn bool
+	IsAdmin    bool
 	Funcs      map[string]interface{}
 }
 
@@ -20,6 +21,10 @@ type viewService struct {
 	r *http.Request
 	t *template.Template
 	b *bytes.Buffer
+}
+
+func NewView(w http.ResponseWriter, r *http.Request) *viewService {
+	return &viewService{w: w, r: r}
 }
 
 func (s *viewService) make(filesnames ...string) {
@@ -48,9 +53,11 @@ func (s *viewService) exec(layout string, data interface{}) error {
 	if ok {
 		pageData.AuthUser = authUser
 		pageData.IsLoggedIn = true
+		pageData.IsAdmin = authUser.RoleID == ADMIN
 	} else {
 		pageData.AuthUser = user{}
 		pageData.IsLoggedIn = false
+		pageData.IsAdmin = false
 	}
 
 	s.b = bufpool.Get()

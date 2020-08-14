@@ -11,12 +11,13 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 	"github.com/oxtoacart/bpool"
+	"github.com/sirupsen/logrus"
 )
 
 var tpls *template.Template
 var db *sql.DB
+var admin *adminService
 var auth *authService
 var users *userService
 var projects *projectService
@@ -26,6 +27,10 @@ var bugs *bugService
 var log *logrus.Logger
 var mainLayout string
 var bufpool *bpool.BufferPool
+
+const (
+	ADMIN = 1
+)
 
 func init() {
 	bufpool = bpool.NewBufferPool(64)
@@ -70,6 +75,7 @@ func main() {
 
 	router.ServeFiles("/resources/*filepath", http.Dir("public/assets"))
 
+	admin = NewAdminService(db, log, tpls)
 	users = NewUserService(db, log, tpls)
 	auth = NewAuthService(db, log, tpls)
 	projects = NewProjectService(db, log, tpls)
@@ -95,6 +101,18 @@ func main() {
 
 		w.WriteHeader(http.StatusOK)
 	})
+
+	router.GET("/admin", auth.guard(admin.index))
+	router.GET("/admin/users", auth.guard(admin.users))
+	router.POST("/admin/setUserRole", auth.guard(admin.setUserRole))
+	router.GET("/admin/roles", auth.guard(admin.roles))
+	router.GET("/admin/roles/new", auth.guard(admin.createRole))
+	router.POST("/roles/:role_id/update", auth.guard(admin.updateRole))
+	router.GET("/roles/:role_id/edit", auth.guard(admin.editRole))
+	router.POST("/roles", auth.guard(admin.storeRole))
+	router.GET("/roles/:role_id", auth.guard(admin.role))
+	router.DELETE("/roles/:role_id", auth.guard(admin.destroyRole))
+	router.POST("/admin/permissions/:role_id", auth.guard(admin.savePermissions))
 
 	router.GET("/users", users.index)
 	router.GET("/users/:user_id", users.show)

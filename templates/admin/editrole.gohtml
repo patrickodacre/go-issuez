@@ -1,0 +1,19 @@
+{{define "content_menu"}}
+    <a href="/admin/roles" class="btn btn-sm btn-link mr-2">
+        <span data-feather="file"></span>
+        Roles List
+    </a>
+{{end}}
+{{define "content"}}
+    <form action="/roles/{{.Data.Role.ID}}/update" method="POST">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{.Data.Role.Name}}" aria-describedby="">
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <input type="text" class="form-control" id="description" name="description" value="{{.Data.Role.Description}}" aria-describedby="">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+{{end}}

@@ -402,57 +402,78 @@ func (s *authService) logout(w http.ResponseWriter, r *http.Request, _ httproute
 
 func (s *authService) getAuthUser(r *http.Request) (authUser user, ok bool) {
 	cookie, err := r.Cookie("goissuez")
+	userData := user{}
 
 	// no cookie == error
 	if err != nil {
-		return user{}, false
+		return userData, false
 	}
 
-	sql := `
-SELECT u.id, u.name, u.username, u.email, u.created_at, u.updated_at, u.last_login FROM goissuez.users u
+	stmt, err := s.db.Prepare(`
+SELECT
+u.id,
+u.name,
+u.username,
+u.email,
+u.created_at,
+u.updated_at,
+u.last_login,
+u.role_id
+FROM goissuez.users u
 INNER JOIN goissuez.sessions s ON s.user_id = u.id
 WHERE s.uuid = $1
 LIMIT 1
-`
-	stmt, err := s.db.Prepare(sql)
+`)
 
 	if err != nil {
 		s.log.Error("Error Prepare getAuthUser: ", err)
-		return user{}, false
+		return userData, false
 	}
 
-	rows, err := stmt.Query(cookie.Value)
+	row := stmt.QueryRow(cookie.Value)
 
-	if err != nil {
-		s.log.Error("Error Query getAuthUser: ", err)
-		return user{}, false
+	roleID := sql.NullInt64{}
+	// permissions := []string{}
+
+	if err := row.Scan(
+		&userData.ID,
+		&userData.Name,
+		&userData.Email,
+		&userData.Username,
+		&userData.CreatedAt,
+		&userData.UpdatedAt,
+		&userData.LastLogin,
+		&roleID,
+	); err != nil {
+		return userData, false
 	}
 
-	var (
-		id         int64
-		name       string
-		email      string
-		username   string
-		created_at string
-		updated_at string
-		last_login string
-	)
+	if roleID.Valid {
+		userData.RoleID = roleID.Int64
+		permissions, err := admin.getRolePermissions(userData.RoleID)
 
-	for rows.Next() {
-
-		if err := rows.Scan(&id, &name, &email, &username, &created_at, &updated_at, &last_login); err != nil {
-			return user{}, false
+		if err != nil {
+			s.log.Error("error getting user permissions", err)
+			return userData, false
 		}
 
+		userData.Permissions = permissions
 	}
 
-	return user{
-		ID:        id,
-		Name:      name,
-		Email:     email,
-		Username:  username,
-		CreatedAt: created_at,
-		UpdatedAt: updated_at,
-		LastLogin: last_login,
-	}, true
+	userData.IsAdmin = roleID.Valid && roleID.Int64 == ADMIN
+
+	return userData, true
+}
+
+func (s *authService) can(user user, capabilities []string) bool {
+	for _, c := range capabilities {
+
+		_, ok := user.Permissions[c]
+
+		if !ok {
+			return false
+		}
+	}
+
+	return true
 }

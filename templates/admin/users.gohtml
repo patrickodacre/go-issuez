@@ -1,0 +1,30 @@
+{{define "content"}}
+
+    <ul class="list-group-flush split">
+        
+    {{range $k, $u := .Data.Users}}
+        <li class="list-group-item with-actions">
+            <div class="name">
+                <div>
+                    {{$u.Name}} - {{$u.Role.Name}}
+                </div>
+            </div>
+            <div class="actions">
+                <select data-user-role-select data-user-id="{{$u.ID}}" class="form-control" id="exampleFormControlSelect1">
+                    {{range $k, $r := $.Data.Roles}}
+                        <option value="{{$r.ID}}">{{$r.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </li>
+    {{end}}
+    </ul>
+{{end}}
+
+{{define "scripts"}}
+    <script>
+     
+     window.adminUserPageModule()
+    </script>
+
+{{end}}
