@@ -289,6 +289,8 @@ WHERE user_id = $1
 		return
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query(user_id)
 
 	if err != nil {
@@ -377,6 +379,8 @@ FROM
 		return
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query(user_id)
 
 	if err != nil {
@@ -429,6 +433,8 @@ WHERE id = ANY($1)
 
 		return
 	}
+
+	defer stmt.Close()
 
 	rows, err = stmt.Query(pq.Array(feature_ids))
 
@@ -524,6 +530,8 @@ ORDER BY updated_at
 		return
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query(user_id)
 
 	if err != nil {
@@ -618,6 +626,8 @@ ORDER BY updated_at
 
 		return
 	}
+
+	defer stmt.Close()
 
 	rows, err := stmt.Query(user_id)
 
@@ -745,6 +755,8 @@ LIMIT 1
 	if err != nil {
 		return user{}, err
 	}
+
+	defer stmt.Close()
 
 	row := stmt.QueryRow(user_id)
 
