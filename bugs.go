@@ -62,6 +62,8 @@ ORDER BY b.updated_at
 		return
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query()
 
 	if err != nil {
