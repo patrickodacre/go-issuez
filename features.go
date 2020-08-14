@@ -67,6 +67,8 @@ ORDER BY f.updated_at
 		return
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query()
 
 	if err != nil {
@@ -547,6 +549,8 @@ LIMIT 1
 			return
 		}
 
+		defer stmt.Close()
+
 		rows, err := stmt.Query(feature_id)
 
 		if err != nil {
@@ -604,6 +608,8 @@ LIMIT 1
 
 			return
 		}
+
+		defer stmt.Close()
 
 		rows, err := stmt.Query(feature_id)
 
