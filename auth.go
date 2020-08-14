@@ -430,6 +430,8 @@ LIMIT 1
 		return userData, false
 	}
 
+	defer stmt.Close()
+
 	row := stmt.QueryRow(cookie.Value)
 
 	roleID := sql.NullInt64{}
