@@ -34,9 +34,12 @@ func NewFeatureService(db *sql.DB, log *logrus.Logger, tpls *template.Template) 
 }
 
 func (s *featureService) all(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	features := []struct{
-		Feature feature
-		RelatedData struct{StoryCount int; BugCount int;}
+	features := []struct {
+		Feature     feature
+		RelatedData struct {
+			StoryCount int
+			BugCount   int
+		}
 	}{}
 
 	stmt, err := s.db.Prepare(`
@@ -79,15 +82,18 @@ ORDER BY f.updated_at
 	}
 
 	for rows.Next() {
-		featureData := struct{
-			Feature feature
-			RelatedData struct{
+		featureData := struct {
+			Feature     feature
+			RelatedData struct {
 				StoryCount int
-				BugCount int
+				BugCount   int
 			}
 		}{
 			feature{Project: &project{}},
-			struct{StoryCount int; BugCount int;}{0, 0,},
+			struct {
+				StoryCount int
+				BugCount   int
+			}{0, 0},
 		}
 
 		err := rows.Scan(
@@ -113,7 +119,7 @@ ORDER BY f.updated_at
 
 	pageData := page{
 		Title: "Features",
-		Data: features,
+		Data:  features,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
