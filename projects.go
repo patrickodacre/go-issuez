@@ -354,6 +354,8 @@ WHERE project_id = $1
 		return
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query(project_id)
 
 	if err != nil {
