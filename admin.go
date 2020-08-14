@@ -96,6 +96,8 @@ FROM goissuez.users
 		return
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query()
 
 	if err != nil {
@@ -187,6 +189,8 @@ ORDER BY name
 		s.log.Error("Error admin.roles.prepare.roles", err)
 		return
 	}
+
+	defer stmt.Close()
 
 	rows, err := stmt.Query()
 
@@ -289,6 +293,8 @@ LIMIT 1
 
 		return
 	}
+
+	defer stmt.Close()
 
 	row := stmt.QueryRow(role_id)
 
@@ -393,6 +399,8 @@ WHERE role_id = $1
 		return
 	}
 
+	defer stmt.Close()
+
 	_, err = stmt.Exec(role_id)
 
 	if err != nil {
@@ -429,6 +437,8 @@ WHERE role_id = $1
 		return
 	}
 
+	defer stmt.Close()
+
 	_, err = stmt.Exec(vals...)
 
 	if err != nil {
@@ -462,6 +472,8 @@ FROM goissuez.capabilities
 	if err != nil {
 		return capabilities, err
 	}
+
+	defer stmt.Close()
 
 	rows, err := stmt.Query()
 
@@ -509,6 +521,8 @@ FROM goissuez.roles
 		return roles, err
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query()
 
 	if err != nil {
@@ -553,6 +567,8 @@ WHERE role_id = $1
 	if err != nil {
 		return permissions, err
 	}
+
+	defer stmt.Close()
 
 	rows, err := stmt.Query(role_id)
 
@@ -728,6 +744,8 @@ LIMIT 1
 		return
 	}
 
+	defer stmt.Close()
+
 	row := stmt.QueryRow(role_id)
 
 	roleData := role{}
@@ -851,6 +869,8 @@ WHERE id = $1
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
+
+	defer stmt.Close()
 
 	_, err = stmt.Exec(request.UserID, request.RoleID)
 
