@@ -12,7 +12,13 @@
             <div class="actions">
                 <select data-user-role-select data-user-id="{{$u.ID}}" class="form-control" id="exampleFormControlSelect1">
                     {{range $k, $r := $.Data.Roles}}
-                        <option value="{{$r.ID}}">{{$r.Name}}</option>
+                        <option
+                            {{if eq $u.RoleID $r.ID}}
+                                selected
+                            {{end}}
+                            value="{{$r.ID}}">
+                            {{$r.Name}}
+                        </option>
                     {{end}}
                 </select>
             </div>
