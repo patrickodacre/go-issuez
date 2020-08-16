@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"github.com/sirupsen/logrus"
 	"html/template"
@@ -717,7 +718,18 @@ func (s *userService) destroy(w http.ResponseWriter, r *http.Request, ps httprou
 
 	user_id := ps.ByName("user_id")
 
-	stmt, err := s.db.Prepare(`
+	ctx := context.Background()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+
+	if err != nil {
+		s.log.Error("Error users.destroy.begintx.", err)
+
+		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
+		return
+	}
+
+	stmt, err := tx.Prepare(`
 UPDATE goissuez.users
 SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = $1
@@ -725,6 +737,8 @@ WHERE id = $1
 
 	if err != nil {
 		s.log.Error("Error users.destroy.prepare.", err)
+
+		tx.Rollback()
 
 		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
 		return
@@ -736,6 +750,75 @@ WHERE id = $1
 
 	if err != nil {
 		s.log.Error("Error users.destroy.exec.", err)
+
+		tx.Rollback()
+
+		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
+		return
+	}
+
+	// update all stories
+	stmt, err = tx.Prepare(`
+UPDATE goissuez.stories
+SET assignee_id = NULL
+WHERE assignee_id = $1
+`)
+
+	if err != nil {
+		s.log.Error("Error users.destroy.update.stories.prepare.", err)
+
+		tx.Rollback()
+
+		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
+		return
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(user_id)
+
+	if err != nil {
+		s.log.Error("Error users.destroy.update.stories.exec.", err)
+
+		tx.Rollback()
+
+		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
+		return
+	}
+
+	// update all bugs
+	stmt, err = tx.Prepare(`
+UPDATE goissuez.bugs
+SET assignee_id = NULL
+WHERE assignee_id = $1
+`)
+
+	if err != nil {
+		s.log.Error("Error users.destroy.update.bugs.prepare.", err)
+
+		tx.Rollback()
+
+		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
+		return
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(user_id)
+
+	if err != nil {
+		s.log.Error("Error users.destroy.update.bugs.exec.", err)
+
+		tx.Rollback()
+
+		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		s.log.Error("Error users.destroy.committx.", err)
 
 		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
 		return
