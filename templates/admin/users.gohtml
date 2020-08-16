@@ -3,28 +3,63 @@
     <ul class="list-group-flush split">
         
     {{range $k, $u := .Data.Users}}
-        <li class="list-group-item with-actions">
-            <div class="name">
-                <div>
-                    {{$u.Name}} - {{$u.Role.Name}}
+        {{ if eq $u.DeletedAt "" }}
+            <li class="list-group-item with-actions">
+                <div class="name">
+                    <div>
+                        {{$u.Name}} - {{$u.Role.Name}}
+                    </div>
                 </div>
-            </div>
-            <div class="actions">
-                <select data-user-role-select data-user-id="{{$u.ID}}" class="form-control" id="exampleFormControlSelect1">
-                    {{range $k, $r := $.Data.Roles}}
-                        <option
-                            {{if eq $u.RoleID $r.ID}}
-                                selected
+                <div class="actions">
+                    <div>
+                        <select data-user-role-select data-user-id="{{$u.ID}}" class="form-control" id="exampleFormControlSelect1">
+                            {{range $k, $r := $.Data.Roles}}
+                                <option
+                                    {{if eq $u.RoleID $r.ID}}
+                                        selected
+                                    {{end}}
+                                    value="{{$r.ID}}">
+                                    {{$r.Name}}
+                                </option>
                             {{end}}
-                            value="{{$r.ID}}">
-                            {{$r.Name}}
-                        </option>
-                    {{end}}
-                </select>
-            </div>
-        </li>
+                        </select>
+                    </div>
+                    <button data-user-delete="{{(call $.Funcs.ToJSON $u)}}" class="btn btn-sm btn-danger">
+                        <span data-feather="delete"></span>
+                        Delete
+                    </button>
+                </div>
+            </li>
+        {{end}}
     {{end}}
     </ul>
+
+
+ 
+<!-- Modal -->
+<div data-issuez-delete-modal="user" class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel" data-delete-modal-title>Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" data-delete-modal-content>
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+
+                <button data-delete-confirm class="btn btn-danger">
+                    <span data-feather="delete"></span>
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {{end}}
 
 {{define "scripts"}}

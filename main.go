@@ -114,7 +114,6 @@ func main() {
 	router.DELETE("/roles/:role_id", auth.guard(admin.destroyRole))
 	router.POST("/admin/permissions/:role_id", auth.guard(admin.savePermissions))
 
-	router.GET("/users", users.index)
 	router.GET("/users/:user_id", users.show)
 
 	router.GET("/users/:user_id/projects", auth.guard(users.projects))

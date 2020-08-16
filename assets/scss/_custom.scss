@@ -23,6 +23,12 @@
 
     > .actions {
         margin-left: auto;
+        display: flex;
+        flex-flow: row nowrap;
+
+        > * {
+            margin-left: 1rem;
+        }
     }
 
     > .details {

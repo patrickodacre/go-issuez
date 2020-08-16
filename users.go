@@ -29,6 +29,7 @@ type user struct {
 	CreatedAt   string
 	UpdatedAt   string
 	LastLogin   string
+	DeletedAt   string
 	IsAdmin     bool
 	RoleID      int64
 	Role        role
@@ -711,30 +712,37 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 	view.send(http.StatusOK)
 }
 
+// destory user SOFT DELETES a user by just adding a deleted_at field.
 func (s *userService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	user_id := ps.ByName("id")
 
-	stmt, e1 := s.db.Prepare(`DELETE from goissuez.users WHERE id = $1`)
+	user_id := ps.ByName("user_id")
 
-	if handleError(e1, "Failed to delete user.") {
-		http.Error(w, e1.Error(), 500)
+	stmt, err := s.db.Prepare(`
+UPDATE goissuez.users
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`)
 
+	if err != nil {
+		s.log.Error("Error users.destroy.prepare.", err)
+
+		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
 		return
 	}
 
 	defer stmt.Close()
 
-	_, e2 := stmt.Exec(user_id)
+	_, err = stmt.Exec(user_id)
 
-	if handleError(e2, "Failed to delete user.") {
-		http.Error(w, e2.Error(), 500)
+	if err != nil {
+		s.log.Error("Error users.destroy.exec.", err)
 
+		http.Error(w, "Cannot delete user.", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write([]byte("Success"))
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 }
 
 func getUserByID(db *sql.DB, user_id string) (user, error) {

@@ -86,7 +86,8 @@ id,
 name,
 username,
 photo_url,
-role_id
+role_id,
+deleted_at
 FROM goissuez.users
 `)
 
@@ -111,6 +112,7 @@ FROM goissuez.users
 		userData := user{}
 		var photo_url sql.NullString
 		var role_id sql.NullInt64
+		var deleted_at sql.NullString
 
 		err := rows.Scan(
 			&userData.ID,
@@ -118,12 +120,17 @@ FROM goissuez.users
 			&userData.Username,
 			&photo_url,
 			&role_id,
+			&deleted_at,
 		)
 
 		if err != nil {
 			s.log.Error("Error admin.users.scan", err)
 
 			return
+		}
+
+		if deleted_at.Valid {
+			userData.DeletedAt = deleted_at.String
 		}
 
 		if photo_url.Valid {
@@ -143,10 +150,24 @@ FROM goissuez.users
 		users = append(users, userData)
 	}
 
-	pageData := page{Title: "Users", Data: struct {
-		Users []user
-		Roles []role
-	}{users, roles}}
+	pageData := page{
+		Title: "Users",
+		Data: struct {
+			Users []user
+			Roles []role
+		}{users, roles},
+		Funcs: make(map[string]interface{}),
+	}
+
+	pageData.Funcs["ToJSON"] = func(userData user) string {
+		b, err := json.Marshal(userData)
+
+		if err != nil {
+			return ""
+		}
+
+		return string(b)
+	}
 
 	view := viewService{w: w, r: r}
 	view.make("templates/admin/users.gohtml")
