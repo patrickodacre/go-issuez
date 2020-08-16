@@ -409,7 +409,7 @@ func (s *adminService) savePermissions(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	stmt, err := s.db.Prepare(`
+	stmt, err := tx.Prepare(`
 DELETE FROM goissuez.permissions
 WHERE role_id = $1
 `)
@@ -450,7 +450,7 @@ WHERE role_id = $1
 		paramCount += 2
 	}
 
-	stmt, err = s.db.Prepare(insertQuery)
+	stmt, err = tx.Prepare(insertQuery)
 
 	if err != nil {
 		s.log.Error("Error admin.savePermissiones.insert.prepare", err)
