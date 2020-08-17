@@ -394,7 +394,7 @@ func (s *authService) getAuthUser(r *http.Request) (authUser user, ok bool) {
 	}
 
 	cookie, err := r.Cookie("goissuez")
-	userData := user{}
+	userData := user{Role: role{}}
 
 	// no cookie == error
 	if err != nil {
@@ -410,9 +410,12 @@ u.email,
 u.created_at,
 u.updated_at,
 u.last_login,
-u.role_id
+u.role_id,
+r.name as role_name,
+r.description as role_description
 FROM goissuez.users u
 INNER JOIN goissuez.sessions s ON s.user_id = u.id
+LEFT JOIN goissuez.roles r ON r.id = u.role_id
 WHERE s.uuid = $1
 LIMIT 1
 `)
@@ -427,6 +430,8 @@ LIMIT 1
 	row := stmt.QueryRow(cookie.Value)
 
 	roleID := sql.NullInt64{}
+	role_name := sql.NullString{}
+	role_description := sql.NullString{}
 
 	if err := row.Scan(
 		&userData.ID,
@@ -437,6 +442,8 @@ LIMIT 1
 		&userData.UpdatedAt,
 		&userData.LastLogin,
 		&roleID,
+		&role_name,
+		&role_description,
 	); err != nil {
 		return userData, false
 	}
@@ -451,6 +458,14 @@ LIMIT 1
 		}
 
 		userData.Permissions = permissions
+	}
+
+	if role_name.Valid {
+		userData.Role.Name = role_name.String
+	}
+
+	if role_description.Valid {
+		userData.Role.Description = role_description.String
 	}
 
 	userData.IsAdmin = roleID.Valid && roleID.Int64 == ADMIN
