@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/sirupsen/logrus"
 	"html/template"
 	"io/ioutil"
@@ -206,29 +205,19 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 	s.log.Info("Created user - ", id)
 
 	// login
-	authUser, err := s.authenticateUser(username, password, s.db, w)
+	err = s.authenticateUser(id, w)
 
 	if err != nil {
-		if err.Error() == "unauthorized" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-
-			return
-		}
-
 		http.Error(w, "Cannot login.", http.StatusInternalServerError)
 
 		return
 	}
 
-	s.log.Info("Logged in user", authUser)
+	authUser := user{ID: id, Name: name, Email: email, Username: username, PhotoUrl: photoPathToSave.String}
 
 	ctx := context.WithValue(r.Context(), "user", authUser)
 
 	http.Redirect(w, r.WithContext(ctx), "/dashboard", http.StatusSeeOther)
-
-	// redirect to GET("/users/:id")
-	// this redirect will not work if the status isn't 303
-	// http.Redirect(w, r, "/users/"+string(id), http.StatusSeeOther)
 }
 
 func (s *authService) showLoginForm(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -266,15 +255,23 @@ func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httpro
 	username := r.PostForm.Get("username")
 	password := r.PostForm.Get("password")
 
-	authUser, err := s.authenticateUser(username, password, s.db, w)
+	authUser, err := getUserByUsername(s.db, username)
 
 	if err != nil {
-		if err.Error() == "unauthorized" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		s.log.Error("Error auth.loginuser.", err)
 
-			return
-		}
+		http.Error(w, "Login failed.", http.StatusInternalServerError)
+		return
+	}
 
+	if !s.verifyPassword(authUser, password) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = s.authenticateUser(authUser.ID, w)
+
+	if err != nil {
 		http.Error(w, "Cannot login.", http.StatusInternalServerError)
 
 		return
@@ -287,59 +284,29 @@ func (s *authService) loginUser(w http.ResponseWriter, r *http.Request, _ httpro
 	http.Redirect(w, r.WithContext(ctx), "/dashboard", http.StatusSeeOther)
 }
 
+func (s *authService) verifyPassword(userData user, password string) bool {
+	if err := bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(password)); err != nil {
+		return false
+	}
+
+	return true
+}
+
 // Update sessions table with a new session UUID and SetCookie
-func (s *authService) authenticateUser(username string, password string, db *sql.DB, w http.ResponseWriter) (user, error) {
-
-	stmt, err := db.Prepare(`SELECT id, name, email, username, password, photo_url FROM goissuez.users u WHERE u.username = $1 LIMIT 1`)
-
-	if err != nil {
-		s.log.Error("Error ", err)
-		return user{}, err
-	}
-
-	defer stmt.Close()
-
-	row := stmt.QueryRow(username)
-
-	var authUser user
-	var photo_url sql.NullString
-
-	err = row.Scan(
-		&authUser.ID,
-		&authUser.Name,
-		&authUser.Email,
-		&authUser.Username,
-		&authUser.Password,
-		&photo_url,
-	)
-
-	if err != nil {
-		s.log.Error("Error ", err)
-		return user{}, errors.New("Failed to login.")
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(authUser.Password), []byte(password)); err != nil {
-		e := errors.New("unauthorized")
-		return user{}, e
-	}
-
-	if photo_url.Valid {
-		authUser.PhotoUrl = photo_url.String
-	}
-
+func (s *authService) authenticateUser(user_id int64, w http.ResponseWriter) error {
 	// update the session:
 	uuid, err := uuid.NewRandom()
 
 	if err != nil {
 		s.log.Error("Error ", err)
-		return user{}, err
+		return err
 	}
 
-	stmt, err = db.Prepare(`INSERT into goissuez.sessions (uuid, user_id, created_at) values ($1, $2, CURRENT_TIMESTAMP) RETURNING user_id`)
+	stmt, err := s.db.Prepare(`INSERT into goissuez.sessions (uuid, user_id, created_at) values ($1, $2, CURRENT_TIMESTAMP) RETURNING user_id`)
 
 	if err != nil {
 		s.log.Error("Error ", err)
-		return user{}, err
+		return err
 	}
 
 	defer stmt.Close()
@@ -351,25 +318,25 @@ func (s *authService) authenticateUser(username string, password string, db *sql
 		stmt, err := s.db.Prepare(`DELETE from goissuez.sessions WHERE user_id = $1 AND uuid != $2`)
 
 		if err != nil {
-			s.log.Error("Error s.db.Prepare() flushing sessions for user id: ", authUser.ID, err)
+			s.log.Error("Error s.db.Prepare() flushing sessions for user id: ", user_id, err)
 
 			return
 		}
 
 		defer stmt.Close()
 
-		_, err = stmt.Exec(authUser.ID, uuid.String())
+		_, err = stmt.Exec(user_id, uuid.String())
 
 		if err != nil {
-			s.log.Error("Error stmt.Exec() flushing sessions for user id: ", authUser.ID, err)
+			s.log.Error("Error stmt.Exec() flushing sessions for user id: ", user_id, err)
 		}
 	}()
 
-	_, err = stmt.Exec(uuid.String(), authUser.ID)
+	_, err = stmt.Exec(uuid.String(), user_id)
 
 	if err != nil {
 		s.log.Error("Error ", err)
-		return user{}, err
+		return err
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -381,7 +348,7 @@ func (s *authService) authenticateUser(username string, password string, db *sql
 		HttpOnly: true, // not available to JS
 	})
 
-	return authUser, nil
+	return nil
 }
 
 func (s *authService) logout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

@@ -828,6 +828,41 @@ WHERE assignee_id = $1
 	w.WriteHeader(http.StatusOK)
 }
 
+func getUserByUsername(db *sql.DB, username string) (user, error) {
+	userData := user{}
+
+	stmt, err := db.Prepare(`SELECT id, name, email, username, password, photo_url FROM goissuez.users u WHERE u.username = $1 LIMIT 1`)
+
+	if err != nil {
+		return userData, err
+	}
+
+	defer stmt.Close()
+
+	row := stmt.QueryRow(username)
+
+	var photo_url sql.NullString
+
+	err = row.Scan(
+		&userData.ID,
+		&userData.Name,
+		&userData.Email,
+		&userData.Username,
+		&userData.Password,
+		&photo_url,
+	)
+
+	if err != nil {
+		return userData, err
+	}
+
+	if photo_url.Valid {
+		userData.PhotoUrl = photo_url.String
+	}
+
+	return userData, nil
+}
+
 func getUserByID(db *sql.DB, user_id string) (user, error) {
 
 	stmt, err := db.Prepare(`
