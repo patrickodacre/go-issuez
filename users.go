@@ -37,6 +37,26 @@ type user struct {
 	Permissions map[string]capability
 }
 
+// can checks the authenticated user permissions.
+// if the user isn't authenticated, then false will be returned
+func (u *user) Can(capabilities []string) bool {
+
+	if u.RoleID == 0 {
+		return false
+	}
+
+	for _, c := range capabilities {
+
+		_, ok := u.Permissions[c]
+
+		if !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
 func NewUserService(db *sql.DB, logger *logrus.Logger, tpls *template.Template) *userService {
 	return &userService{db, logger, tpls}
 }

@@ -13,6 +13,7 @@ type page struct {
 	AuthUser   user
 	IsLoggedIn bool
 	IsAdmin    bool
+	CanAdmin   bool
 	Funcs      map[string]interface{}
 }
 
@@ -54,10 +55,13 @@ func (s *viewService) exec(layout string, data interface{}) error {
 		pageData.AuthUser = authUser
 		pageData.IsLoggedIn = true
 		pageData.IsAdmin = authUser.RoleID == ADMIN
+		// for admin demo
+		pageData.CanAdmin = authUser.Can([]string{"admin"})
 	} else {
 		pageData.AuthUser = user{}
 		pageData.IsLoggedIn = false
 		pageData.IsAdmin = false
+		pageData.CanAdmin = false
 	}
 
 	s.b = bufpool.Get()
