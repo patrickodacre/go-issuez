@@ -169,6 +169,66 @@
         {{end}}
         </ul>
 
+        <h2>Roles</h2>
+        <ul class="list-group-flush split">
+        {{range $k, $cap := .Data.Role.Capabilities}}
+            {{if eq $cap.Group "roles"}}
+                {{$permission := index $.Data.Permissions $cap.Name}}
+
+                <li class="list-group-item with-actions">
+                    <div class="name">
+                        {{$cap.Name}}
+                    </div>
+                    <div class="actions">
+                        <div class="form-group form-check">
+                            <input
+                                type="checkbox"
+                                name="permissions"
+                                value="{{$cap.ID}}"
+                                class="form-check-input"
+                                id="{{$cap.ID}}"
+                                {{ if ne $permission.ID 0}}
+                                checked
+                                {{end}}
+                            >
+                            <label class="form-check-label" for="{{$cap.ID}}">Enable</label>
+                        </div>
+                    </div>
+                </li>
+            {{end}}
+        {{end}}
+        </ul>
+
+        <h2>Permissions</h2>
+        <ul class="list-group-flush split">
+        {{range $k, $cap := .Data.Role.Capabilities}}
+            {{if eq $cap.Group "permissions"}}
+                {{$permission := index $.Data.Permissions $cap.Name}}
+
+                <li class="list-group-item with-actions">
+                    <div class="name">
+                        {{$cap.Name}}
+                    </div>
+                    <div class="actions">
+                        <div class="form-group form-check">
+                            <input
+                                type="checkbox"
+                                name="permissions"
+                                value="{{$cap.ID}}"
+                                class="form-check-input"
+                                id="{{$cap.ID}}"
+                                {{ if ne $permission.ID 0}}
+                                checked
+                                {{end}}
+                            >
+                            <label class="form-check-label" for="{{$cap.ID}}">Enable</label>
+                        </div>
+                    </div>
+                </li>
+            {{end}}
+        {{end}}
+        </ul>
+
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 {{end}}
