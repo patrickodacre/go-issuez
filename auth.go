@@ -386,6 +386,13 @@ func (s *authService) demo(w http.ResponseWriter, r *http.Request, ps httprouter
 }
 
 func (s *authService) getAuthUser(r *http.Request) (authUser user, ok bool) {
+	// do we already have a user in the request context?
+	authUser, ok = r.Context().Value("user").(user)
+
+	if ok {
+		return authUser, true
+	}
+
 	cookie, err := r.Cookie("goissuez")
 	userData := user{}
 
