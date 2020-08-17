@@ -32,9 +32,9 @@
         <ul class="list-group list-group-flush">
             {{range $k, $story := .Data.Stories}}
                 <li class="list-group-item with-actions">
-                    <a href="/stories/{{$story.ID}}">{{$story.Name}} - {{$story.Description}}</a>
+                    <a href="/stories/{{$story.ID}}">{{$story.Name}} {{if $story.Description}} - {{$story.Description}}{{end}}</a>
                     <div class="actions">
-                        <a href="/stories/{{$story.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                        <a href="/stories/{{$story.ID}}/edit" class="btn btn-sm btn-outline-primary">
                             <span data-feather="edit"></span>
                             Edit
                         </a>
@@ -71,7 +71,7 @@
                 <li class="list-group-item with-actions">
                     <a href="/bugs/{{$bug.ID}}">{{$bug.Name}} - {{$bug.Description}}</a>
                     <div class="actions">
-                        <a href="/bugs/{{$bug.ID}}/edit" class="btn btn-sm btn-outline-primary mr-2">
+                        <a href="/bugs/{{$bug.ID}}/edit" class="btn btn-sm btn-outline-primary">
                             <span data-feather="edit"></span>
                             Edit
                         </a>
