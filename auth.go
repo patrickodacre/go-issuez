@@ -420,7 +420,6 @@ LIMIT 1
 	row := stmt.QueryRow(cookie.Value)
 
 	roleID := sql.NullInt64{}
-	// permissions := []string{}
 
 	if err := row.Scan(
 		&userData.ID,
