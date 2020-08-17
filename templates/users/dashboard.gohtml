@@ -1,3 +1,10 @@
 {{define "content"}}
-This is your dashboard
+
+    {{if eq .AuthUser.Role.Name "Developer Demo"}}
+        This is a developer demo.
+    {{else if eq .AuthUser.Role.Name "Manager Demo"}}
+        This is a manager demo.
+    {{else if eq .AuthUser.Role.Name "Admin Demo"}}
+        This is an admin demo.
+    {{end}}
 {{end}}

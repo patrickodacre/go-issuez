@@ -382,6 +382,37 @@ LIMIT 1
 	view.send(http.StatusOK)
 }
 
+func (s *adminService) demo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	roles := map[string]string{"admin": "admin_demo", "manager": "manager_demo", "qa": "qa_demo", "developer": "developer_demo"}
+	role := ps.ByName("role")
+
+	username, ok := roles[role]
+
+	if !ok {
+		return
+	}
+
+	userData, err := getUserByUsername(s.db, username)
+
+	if err != nil {
+		s.log.Error("Error admin.demo.getuserbyusername."+role, err)
+		return
+	}
+
+	// don't bother verifying the password
+	err = auth.authenticateUser(userData.ID, w)
+
+	if err != nil {
+		s.log.Error("Error admin.demo.authenticateuser."+role, err)
+		return
+	}
+
+	ctx := context.WithValue(r.Context(), "user", userData)
+
+	http.Redirect(w, r.WithContext(ctx), "/dashboard", http.StatusSeeOther)
+}
+
 // savePermissions saves an array of capability ids for a given role_id.
 // Each capability is saved separately.
 func (s *adminService) savePermissions(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

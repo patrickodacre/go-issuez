@@ -77,6 +77,7 @@ func main() {
 	bugs = NewBugService(db, log, tpls)
 
 	router.GET("/", auth.demo)
+	router.GET("/demo/:role", admin.demo)
 	router.GET("/admin", auth.guard(admin.index))
 	router.GET("/admin/users", auth.guard(admin.users))
 	router.POST("/admin/setUserRole", auth.guard(admin.setUserRole))
