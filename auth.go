@@ -367,6 +367,24 @@ func (s *authService) logout(w http.ResponseWriter, r *http.Request, _ httproute
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+func (s *authService) demo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	pageData := page{Title: "Demo Login"}
+
+	view := NewView(w, r)
+
+	view.make("templates/auth/demo.gohtml")
+
+	err := view.exec(mainLayout, pageData)
+
+	if err != nil {
+		http.Error(w, "Could not load page", http.StatusInternalServerError)
+		return
+	}
+
+	view.send(http.StatusOK)
+}
+
 func (s *authService) getAuthUser(r *http.Request) (authUser user, ok bool) {
 	cookie, err := r.Cookie("goissuez")
 	userData := user{}

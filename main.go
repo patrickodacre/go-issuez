@@ -83,25 +83,7 @@ func main() {
 	stories = NewStoryService(db, log, tpls)
 	bugs = NewBugService(db, log, tpls)
 
-	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-
-		view := viewService{w: w, r: r}
-		view.make("templates/index.gohtml")
-
-		err := view.exec("dashboard_layout", nil)
-
-		if err != nil {
-			log.Error(err)
-			http.Error(w, "Error", http.StatusInternalServerError)
-
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	})
-
+	router.GET("/", auth.demo)
 	router.GET("/admin", auth.guard(admin.index))
 	router.GET("/admin/users", auth.guard(admin.users))
 	router.POST("/admin/setUserRole", auth.guard(admin.setUserRole))
