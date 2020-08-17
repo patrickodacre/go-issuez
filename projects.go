@@ -397,8 +397,21 @@ WHERE project_id = $1
 
 	pageData := page{Title: projectData.Name, Data: projectData, Funcs: make(map[string]interface{})}
 
-	pageData.Funcs["ToJSON"] = func(featureData feature) string {
-		b, err := json.Marshal(featureData)
+	pageData.Funcs["ToJSON"] = func(data interface{}) string {
+
+		var featureData feature
+		var projectData project
+		var b []byte
+		var err error
+
+		featureData, feature_ok := data.(feature)
+		projectData, project_ok := data.(project)
+
+		if feature_ok {
+			b, err = json.Marshal(featureData)
+		} else if project_ok {
+			b, err = json.Marshal(projectData)
+		}
 
 		if err != nil {
 			return ""
