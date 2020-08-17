@@ -54,16 +54,9 @@ func main() {
 
 	templateFuncs := template.FuncMap{}
 
-	templates, err := findAndParseTemplates("templates", templateFuncs)
+	tpls, err := findAndParseTemplates("templates", templateFuncs)
 
 	handleFatalError(err, "Failed to parse templates.")
-
-	tpls = templates
-
-	for _, tpl := range tpls.Templates() {
-		log.Info("tpl")
-		log.Info(tpl.Name())
-	}
 
 	db, e1 := sql.Open("postgres", "postgres://postgres:secret@172.17.0.2/postgres?sslmode=disable")
 
