@@ -714,14 +714,16 @@ ORDER BY updated_at
 
 func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	pageData := page{Title: "User Dashboard", Data: nil}
+	authUser, _ := auth.getAuthUser(r)
+
+	pageData := page{Title: "User Dashboard - " + authUser.Name, Data: nil}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
 	view := viewService{w: w, r: r}
 	view.make("templates/users/dashboard.gohtml")
 
-	err := view.exec("dashboard_layout", pageData)
+	err := view.exec(mainLayout, pageData)
 
 	if err != nil {
 		s.log.Error(err)
