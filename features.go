@@ -698,7 +698,7 @@ LIMIT 1
 func (s *featureService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	feature_id := ps.ByName("feature_id")
 
-	stmt, err := s.db.Prepare(`DELETE from goissuez.features WHERE id = $1`)
+	stmt, err := s.db.Prepare(`UPDATE goissuez.features SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
 
 	if err != nil {
 		s.log.Error("Error features.destroy.prepare.", err)

@@ -427,7 +427,7 @@ WHERE project_id = $1
 func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	project_id := ps.ByName("project_id")
 
-	stmt, err := s.db.Prepare(`DELETE from goissuez.projects WHERE id = $1`)
+	stmt, err := s.db.Prepare(`UPDATE goissuez.projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
 
 	if err != nil {
 		s.log.Error("Error projects.destroy.prepare.", err)

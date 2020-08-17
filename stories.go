@@ -671,7 +671,7 @@ LIMIT 1
 func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	story_id := ps.ByName("story_id")
 
-	stmt, err := s.db.Prepare(`DELETE from goissuez.stories WHERE id = $1`)
+	stmt, err := s.db.Prepare(`UPDATE goissuez.stories SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
 
 	if err != nil {
 		s.log.Error("Error stories.destroy.prepare.", err)

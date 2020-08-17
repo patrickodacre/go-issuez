@@ -668,7 +668,7 @@ LIMIT 1
 func (s *bugService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	bug_id := ps.ByName("bug_id")
 
-	stmt, err := s.db.Prepare(`DELETE from goissuez.bugs WHERE id = $1`)
+	stmt, err := s.db.Prepare(`UPDATE goissuez.bugs SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
 
 	if err != nil {
 		s.log.Error("Error bugs.destroy.prepare.", err)
