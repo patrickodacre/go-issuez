@@ -457,16 +457,3 @@ LIMIT 1
 
 	return userData, true
 }
-
-func (s *authService) can(user user, capabilities []string) bool {
-	for _, c := range capabilities {
-
-		_, ok := user.Permissions[c]
-
-		if !ok {
-			return false
-		}
-	}
-
-	return true
-}
