@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
 	"github.com/oxtoacart/bpool"
@@ -37,6 +38,13 @@ func init() {
 }
 
 func main() {
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	connection := os.Getenv("POSTGRES_CONN_STRING")
 
 	mainLayout = "dashboard_layout"
 
@@ -58,7 +66,7 @@ func main() {
 
 	handleFatalError(err, "Failed to parse templates.")
 
-	db, e1 := sql.Open("postgres", "postgres://postgres:secret@172.17.0.2/postgres?sslmode=disable")
+	db, e1 := sql.Open("postgres", connection)
 
 	handleFatalError(e1, "Failed to connect to db")
 
