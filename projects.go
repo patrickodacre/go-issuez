@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"github.com/sirupsen/logrus"
 	"html/template"
 	"net/http"
+	"strconv"
+	"strings"
 
-	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -440,27 +443,168 @@ WHERE project_id = $1
 func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	project_id := ps.ByName("project_id")
 
-	stmt, err := s.db.Prepare(`UPDATE goissuez.projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
+	tx, err := s.db.BeginTx(context.Background(), nil)
 
 	if err != nil {
-		s.log.Error("Error projects.destroy.prepare.", err)
+		s.log.Error("Error projects.destroy.begintx.", err)
 
-		http.Error(w, "Error deleting project.", http.StatusInternalServerError)
-
+		http.Error(w, "Cannot delete project.", http.StatusInternalServerError)
 		return
 	}
 
-	defer stmt.Close()
+	// DELETE Project
+	{
+		stmt, err := tx.Prepare(`UPDATE goissuez.projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
 
-	_, err = stmt.Exec(project_id)
+		if err != nil {
+			s.log.Error("Error projects.destroy.prepare.", err)
 
-	if err != nil {
-		s.log.Error("Error projects.destroy.exec.", err)
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
 
-		http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+		defer stmt.Close()
 
-		return
+		_, err = stmt.Exec(project_id)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.exec.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
 	}
+
+	// Features
+	feature_ids := []int64{}
+	{
+		// first save all feature IDs to make handling stories and bugs easier
+		stmt, err := tx.Prepare(`SELECT id from goissuez.features WHERE project_id = $1`)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.query.features.prepare.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
+
+		defer stmt.Close()
+
+		rows, err := stmt.Query(project_id)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.query.features.query.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
+
+		for rows.Next() {
+			var id int64
+
+			err := rows.Scan(
+				&id,
+			)
+
+			if err != nil {
+				s.log.Error("Error projects.destroy.query.features.scan.", err)
+
+				tx.Rollback()
+				http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+				return
+			}
+
+			feature_ids = append(feature_ids, id)
+		}
+
+		// DELETE Features
+		stmt, err = tx.Prepare(`UPDATE goissuez.features SET deleted_at = CURRENT_TIMESTAMP WHERE project_id = $1`)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.delete.features.prepare.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
+
+		defer stmt.Close()
+
+		_, err = stmt.Exec(project_id)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.delete.features.exec.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// DELETE Stories associted with the features deleted
+	var deleted_feature_ids string
+	{
+		stmt, err := tx.Prepare(`UPDATE goissuez.stories SET deleted_at = CURRENT_TIMESTAMP WHERE feature_id IN ($1)`)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.delete.stories.prepare.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
+
+		defer stmt.Close()
+
+		feature_id_strings := []string{}
+
+		for _, v := range feature_ids {
+			feature_id_strings = append(feature_id_strings, strconv.FormatInt(v, 10))
+		}
+
+		deleted_feature_ids = strings.Join(feature_id_strings, ", ")
+
+		_, err = stmt.Exec(deleted_feature_ids)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.delete.stories.exec.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// DELETE Bugs
+	{
+		stmt, err := tx.Prepare(`UPDATE goissuez.bugs SET deleted_at = CURRENT_TIMESTAMP WHERE feature_id IN ($1)`)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.delete.bugs..prepare.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
+
+		defer stmt.Close()
+
+		_, err = stmt.Exec(deleted_feature_ids)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.delete.bugs.exec.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	tx.Commit()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
