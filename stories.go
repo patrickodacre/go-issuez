@@ -166,7 +166,7 @@ func (s *storyService) index(w http.ResponseWriter, r *http.Request, ps httprout
 
 	parentFeatureID := ps.ByName("feature_id")
 
-	stmt, err := s.db.Prepare(`SELECT id, name, description, project_id FROM goissuez.features WHERE id = $1`)
+	stmt, err := s.db.Prepare(`SELECT id, name, description, project_id, deleted_at FROM goissuez.features WHERE id = $1`)
 
 	if err != nil {
 		s.log.Error("Error stories.index.prepare.feature.", err)
@@ -178,13 +178,28 @@ func (s *storyService) index(w http.ResponseWriter, r *http.Request, ps httprout
 
 	defer stmt.Close()
 
-	err = stmt.QueryRow(parentFeatureID).Scan(&featureData.ID, &featureData.Name, &featureData.Description, &featureData.ProjectID)
+	row := stmt.QueryRow(parentFeatureID)
+
+	deleted_at := sql.NullString{}
+
+	err = row.Scan(
+		&featureData.ID,
+		&featureData.Name,
+		&featureData.Description,
+		&featureData.ProjectID,
+		&deleted_at,
+	)
 
 	if err != nil {
 		s.log.Error("Error stories.index.scan.feature.", err)
 
 		http.Error(w, "Error listing stories.", http.StatusInternalServerError)
 
+		return
+	}
+
+	if deleted_at.Valid {
+		deletedEntityNotice("This feature has been deleted, so you cannot view its stories.", w, r, s.log)
 		return
 	}
 
