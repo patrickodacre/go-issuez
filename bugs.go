@@ -52,6 +52,7 @@ f.name as feature_name
 FROM goissuez.bugs b
 JOIN goissuez.features f
 ON f.id = b.feature_id
+WHERE b.deleted_at IS NULL
 ORDER BY b.updated_at
 `)
 
