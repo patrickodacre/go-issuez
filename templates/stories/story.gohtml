@@ -12,7 +12,7 @@
 {{define "content"}}
 <div class="card">
     <div class="card-body">
-        <h5 class="card-title">#{{.Data.ID}} - {{.Data.Name}}</h5>
+        <h5 class="card-title">#{{.Data.ID}} - {{.Data.Name}} {{if ne .Data.DeletedAt ""}}(deleted){{end}}</h5>
 
         <h6 class="card-subtitle mb-2 text-muted">Created By: {{.Data.Creator.Name}}</h6>
         {{if .Data.Assignee}}

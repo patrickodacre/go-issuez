@@ -26,6 +26,7 @@ type story struct {
 	AssigneeID  int64
 	CreatedAt   string
 	UpdatedAt   string
+	DeletedAt   string
 	Creator     *user
 	Assignee    *user
 	Feature     *feature
@@ -639,8 +640,7 @@ LIMIT 1
 	}
 
 	if deleted_at.Valid {
-		deletedEntityNotice("This story has been deleted.", w, r, s.log)
-		return
+		storyData.DeletedAt = deleted_at.String
 	}
 
 	if assigneeID.Valid {
