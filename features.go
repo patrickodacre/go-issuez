@@ -24,6 +24,7 @@ type feature struct {
 	UserID      int64
 	CreatedAt   string
 	UpdatedAt   string
+	DeletedAt   string
 	Project     *project
 	Stories     []story
 	Bugs        []bug
@@ -483,6 +484,7 @@ f.project_id,
 f.user_id,
 f.created_at,
 f.updated_at,
+f.deleted_at,
 p.name as project_name
 FROM goissuez.features f
 JOIN goissuez.projects p
@@ -504,6 +506,7 @@ LIMIT 1
 	row := stmt.QueryRow(feature_id)
 
 	featureData := feature{Project: &project{}}
+	deleted_at := sql.NullString{}
 
 	err = row.Scan(
 		&featureData.ID,
@@ -513,6 +516,7 @@ LIMIT 1
 		&featureData.UserID,
 		&featureData.CreatedAt,
 		&featureData.UpdatedAt,
+		&deleted_at,
 		&featureData.Project.Name,
 	)
 
@@ -522,6 +526,10 @@ LIMIT 1
 		http.Error(w, "Error getting feature.", http.StatusInternalServerError)
 
 		return
+	}
+
+	if deleted_at.Valid {
+		featureData.DeletedAt = deleted_at.String
 	}
 
 	// get the stories for the feature
@@ -646,7 +654,19 @@ LIMIT 1
 		featureData.Bugs = bugs
 	}
 
-	pageData := page{Title: featureData.Name, Data: featureData, Funcs: make(map[string]interface{})}
+	var title string
+
+	if featureData.DeletedAt == "" {
+		title = featureData.Name
+	} else {
+		title = featureData.Name + " (deleted)"
+	}
+
+	pageData := page{
+		Title: title,
+		Data:  featureData,
+		Funcs: make(map[string]interface{}),
+	}
 
 	pageData.Funcs["ToJSON"] = func(data interface{}) string {
 
