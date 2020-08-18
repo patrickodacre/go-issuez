@@ -585,6 +585,7 @@ s.user_id,
 s.assignee_id,
 s.created_at,
 s.updated_at,
+s.deleted_at,
 f.id,
 f.name
 FROM goissuez.stories s
@@ -612,6 +613,7 @@ LIMIT 1
 
 	// this could be null if there is no assignee
 	var assigneeID sql.NullInt64
+	deleted_at := sql.NullString{}
 
 	err = row.Scan(
 		&storyData.ID,
@@ -622,6 +624,7 @@ LIMIT 1
 		&assigneeID,
 		&storyData.CreatedAt,
 		&storyData.UpdatedAt,
+		&deleted_at,
 		&storyData.Feature.ID,
 		&storyData.Feature.Name,
 	)
@@ -631,6 +634,11 @@ LIMIT 1
 
 		http.Error(w, "Error getting story.", http.StatusInternalServerError)
 
+		return
+	}
+
+	if deleted_at.Valid {
+		deletedEntityNotice("This story has been deleted.", w, r, s.log)
 		return
 	}
 
