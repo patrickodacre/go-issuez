@@ -37,6 +37,13 @@ func NewBugService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *bug
 }
 
 func (s *bugService) all(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_bugs_mine"}) && !authUser.Can([]string{"read_bugs_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	bugs := []bug{}
 
 	stmt, err := s.db.Prepare(`
@@ -104,6 +111,25 @@ ORDER BY b.updated_at
 		bugs = append(bugs, bugData)
 	}
 
+	// filter with permission checks
+	filteredBugs := []bug{}
+	{
+		for _, s := range bugs {
+			if s.AssigneeID == authUser.ID {
+				if authUser.Can([]string{"read_bugs_mine"}) {
+					filteredBugs = append(filteredBugs, s)
+				}
+			} else {
+				if authUser.Can([]string{"read_bugs_others"}) {
+					filteredBugs = append(filteredBugs, s)
+				}
+			}
+
+		}
+
+		bugs = filteredBugs
+	}
+
 	users, err := getUsers(s.db)
 
 	usersByID := make(map[int64]*user)
@@ -159,6 +185,13 @@ ORDER BY b.updated_at
 }
 
 func (s *bugService) featureBugs(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_bugs_mine"}) && !authUser.Can([]string{"read_bugs_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	featureData := feature{}
 
@@ -224,9 +257,10 @@ ORDER BY created_at
 		return
 	}
 
+	bugs := []bug{}
 	for rows.Next() {
 
-		bugData := &bug{}
+		bugData := bug{}
 		var assigneeID sql.NullInt64
 
 		err := rows.Scan(
@@ -253,7 +287,25 @@ ORDER BY created_at
 			bugData.AssigneeID = assigneeID.Int64
 		}
 
-		featureData.Bugs = append(featureData.Bugs, *bugData)
+		bugs = append(bugs, bugData)
+	}
+
+	// filter with permission checks
+	filteredBugs := []bug{}
+	{
+		for _, s := range bugs {
+			if s.AssigneeID == authUser.ID || s.UserID == authUser.ID {
+				if authUser.Can([]string{"read_bugs_mine"}) {
+					filteredBugs = append(filteredBugs, s)
+				}
+			} else {
+				if authUser.Can([]string{"read_bugs_others"}) {
+					filteredBugs = append(filteredBugs, s)
+				}
+			}
+		}
+
+		featureData.Bugs = filteredBugs
 	}
 
 	pageData := page{Title: "Bugs", Data: featureData}
@@ -275,8 +327,12 @@ ORDER BY created_at
 }
 
 func (s *bugService) store(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
 
-	authUser, _ := r.Context().Value("user").(user)
+	if !authUser.Can([]string{"create_bugs"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	feature_id := ps.ByName("feature_id")
 
@@ -334,8 +390,57 @@ RETURNING id
 }
 
 func (s *bugService) update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
 
 	bug_id := ps.ByName("bug_id")
+
+	// ensure we have the correct permissions
+	{
+		bugData := bug{}
+
+		stmt, err := s.db.Prepare(`SELECT user_id, assignee_id FROM goissuez.bugs WHERE id = $1`)
+
+		if err != nil {
+			s.log.Error("Error bugs.update.prepare.", err)
+
+			http.Error(w, "Error updating bug.", http.StatusInternalServerError)
+
+			return
+		}
+
+		assignee_id := sql.NullInt64{}
+
+		err = stmt.QueryRow(bug_id).Scan(
+			&bugData.UserID,
+			&assignee_id,
+		)
+
+		if err != nil {
+			s.log.Error("Error bugs.update.scan.", err)
+
+			http.Error(w, "Error updating bug.", http.StatusInternalServerError)
+
+			return
+		}
+
+		if assignee_id.Valid {
+			bugData.AssigneeID = assignee_id.Int64
+		} else {
+			bugData.AssigneeID = 0
+		}
+
+		if bugData.UserID == authUser.ID || bugData.AssigneeID == authUser.ID {
+			if !authUser.Can([]string{"update_bugs_mine"}) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else {
+			if !authUser.Can([]string{"update_bugs_others"}) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+	}
 
 	r.ParseForm()
 
@@ -392,6 +497,13 @@ WHERE id = $1
 }
 
 func (s *bugService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"update_bugs_mine"}) && !authUser.Can([]string{"update_bugs_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	bug_id := ps.ByName("bug_id")
 
 	query := `
@@ -446,6 +558,18 @@ LIMIT 1
 		return
 	}
 
+	if assigneeID.Int64 == authUser.ID || bugData.UserID == authUser.ID {
+		if !authUser.Can([]string{"update_bugs_mine"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	} else {
+		if !authUser.Can([]string{"update_bugs_others"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	if assigneeID.Valid {
 		bugData.AssigneeID = assigneeID.Int64
 	}
@@ -481,6 +605,13 @@ LIMIT 1
 
 // Show the new / create feature form.
 func (s *bugService) create(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"create_bugs"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	parentFeatureID := ps.ByName("feature_id")
 
@@ -554,6 +685,12 @@ LIMIT 1
 }
 
 func (s *bugService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_bugs_mine"}) && !authUser.Can([]string{"read_bugs_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	bug_id := ps.ByName("bug_id")
 
@@ -616,6 +753,18 @@ LIMIT 1
 		return
 	}
 
+	if assigneeID.Int64 == authUser.ID || bugData.UserID == authUser.ID {
+		if !authUser.Can([]string{"read_bugs_mine"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	} else {
+		if !authUser.Can([]string{"read_bugs_others"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	if assigneeID.Valid {
 		bugData.AssigneeID = assigneeID.Int64
 
@@ -667,7 +816,57 @@ LIMIT 1
 }
 
 func (s *bugService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
 	bug_id := ps.ByName("bug_id")
+
+	// ensure we have the correct permissions
+	{
+		bugData := bug{}
+
+		stmt, err := s.db.Prepare(`SELECT user_id, assignee_id FROM goissuez.bugs WHERE id = $1`)
+
+		if err != nil {
+			s.log.Error("Error bugs.destroy.prepare.", err)
+
+			http.Error(w, "Error deleting bug.", http.StatusInternalServerError)
+
+			return
+		}
+
+		assignee_id := sql.NullInt64{}
+
+		err = stmt.QueryRow(bug_id).Scan(
+			&bugData.UserID,
+			&assignee_id,
+		)
+
+		if err != nil {
+			s.log.Error("Error bugs.destroy.scan.", err)
+
+			http.Error(w, "Error deleting bug.", http.StatusInternalServerError)
+
+			return
+		}
+
+		if assignee_id.Valid {
+			bugData.AssigneeID = assignee_id.Int64
+		} else {
+			bugData.AssigneeID = 0
+		}
+
+		if bugData.UserID == authUser.ID || bugData.AssigneeID == authUser.ID {
+			if !authUser.Can([]string{"delete_bugs_mine"}) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else {
+			if !authUser.Can([]string{"delete_bugs_others"}) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+	}
 
 	stmt, err := s.db.Prepare(`UPDATE goissuez.bugs SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
 
@@ -694,4 +893,51 @@ func (s *bugService) destroy(w http.ResponseWriter, r *http.Request, ps httprout
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Success"))
+}
+
+func (s *bugService) isPermitted(authUser user, bug_id string, permission string) (bool, error) {
+	permissions := map[string][]string{
+		"read":   []string{"read_bugs_mine", "read_bugs_others"},
+		"update": []string{"update_bugs_mine", "update_bugs_others"},
+		"delete": []string{"delete_bugs_mine", "delete_bugs_others"},
+	}
+
+	// ensure we have the correct permissions
+	bugData := bug{}
+
+	stmt, err := s.db.Prepare(`SELECT user_id, assignee_id FROM goissuez.bugs WHERE id = $1`)
+
+	if err != nil {
+		s.log.Error("Error bugs.destroy.getbug.prepare.", err)
+		return false, err
+	}
+
+	assignee_id := sql.NullInt64{}
+	err = stmt.QueryRow(bug_id).Scan(
+		&bugData.UserID,
+		&assignee_id,
+	)
+
+	if err != nil {
+		s.log.Error("Error bugs.destroy.getbug.scan.", err)
+		return false, err
+	}
+
+	if assignee_id.Valid {
+		bugData.AssigneeID = assignee_id.Int64
+	} else {
+		bugData.AssigneeID = 0
+	}
+
+	if bugData.UserID == authUser.ID || bugData.AssigneeID == authUser.ID {
+		if !authUser.Can([]string{permissions[permission][0]}) {
+			return false, nil
+		}
+	} else {
+		if !authUser.Can([]string{permissions[permission][1]}) {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

@@ -39,6 +39,13 @@ func NewStoryService(db *sql.DB, log *logrus.Logger, tpls *template.Template) *s
 }
 
 func (s *storyService) all(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_stories_mine"}) && !authUser.Can([]string{"read_stories_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	stories := []story{}
 
 	stmt, err := s.db.Prepare(`
@@ -106,6 +113,25 @@ ORDER BY s.updated_at
 		stories = append(stories, storyData)
 	}
 
+	// filter with permission checks
+	filteredStories := []story{}
+	{
+		for _, s := range stories {
+			if s.AssigneeID == authUser.ID {
+				if authUser.Can([]string{"read_stories_mine"}) {
+					filteredStories = append(filteredStories, s)
+				}
+			} else {
+				if authUser.Can([]string{"read_stories_others"}) {
+					filteredStories = append(filteredStories, s)
+				}
+			}
+
+		}
+
+		stories = filteredStories
+	}
+
 	users, err := getUsers(s.db)
 
 	usersByID := make(map[int64]*user)
@@ -165,6 +191,13 @@ ORDER BY s.updated_at
 // First, we'll get the feature details, and then
 // we'll query the related stories separately.
 func (s *storyService) featureStories(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_stories_mine"}) && !authUser.Can([]string{"read_stories_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	featureData := feature{}
 
 	parentFeatureID := ps.ByName("feature_id")
@@ -245,9 +278,10 @@ ORDER BY created_at
 		return
 	}
 
+	stories := []story{}
 	for rows.Next() {
 
-		storyData := &story{}
+		storyData := story{}
 		var assigneeID sql.NullInt64
 
 		err := rows.Scan(
@@ -274,7 +308,25 @@ ORDER BY created_at
 			storyData.AssigneeID = assigneeID.Int64
 		}
 
-		featureData.Stories = append(featureData.Stories, *storyData)
+		stories = append(stories, storyData)
+	}
+
+	// filter with permission checks
+	filteredStories := []story{}
+	{
+		for _, s := range stories {
+			if s.AssigneeID == authUser.ID || s.UserID == authUser.ID {
+				if authUser.Can([]string{"read_stories_mine"}) {
+					filteredStories = append(filteredStories, s)
+				}
+			} else {
+				if authUser.Can([]string{"read_stories_others"}) {
+					filteredStories = append(filteredStories, s)
+				}
+			}
+		}
+
+		featureData.Stories = filteredStories
 	}
 
 	pageData := page{Title: "Stories", Data: featureData}
@@ -297,7 +349,12 @@ ORDER BY created_at
 
 func (s *storyService) store(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-	authUser, _ := r.Context().Value("user").(user)
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"create_stories"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	feature_id := ps.ByName("feature_id")
 
@@ -355,8 +412,57 @@ RETURNING id
 }
 
 func (s *storyService) update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
 
 	story_id := ps.ByName("story_id")
+
+	// ensure we have the correct permissions
+	{
+		storyData := story{}
+
+		stmt, err := s.db.Prepare(`SELECT user_id, assignee_id FROM goissuez.stories WHERE id = $1`)
+
+		if err != nil {
+			s.log.Error("Error stories.update.prepare.", err)
+
+			http.Error(w, "Error updating story.", http.StatusInternalServerError)
+
+			return
+		}
+
+		assignee_id := sql.NullInt64{}
+
+		err = stmt.QueryRow(story_id).Scan(
+			&storyData.UserID,
+			&assignee_id,
+		)
+
+		if err != nil {
+			s.log.Error("Error stories.update.scan.", err)
+
+			http.Error(w, "Error updating story.", http.StatusInternalServerError)
+
+			return
+		}
+
+		if assignee_id.Valid {
+			storyData.AssigneeID = assignee_id.Int64
+		} else {
+			storyData.AssigneeID = 0
+		}
+
+		if storyData.UserID == authUser.ID || storyData.AssigneeID == authUser.ID {
+			if !authUser.Can([]string{"update_stories_mine"}) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else {
+			if !authUser.Can([]string{"update_stories_others"}) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+	}
 
 	r.ParseForm()
 
@@ -413,6 +519,13 @@ WHERE id = $1
 }
 
 func (s *storyService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"update_stories_mine"}) && !authUser.Can([]string{"update_stories_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	story_id := ps.ByName("story_id")
 
 	query := `
@@ -467,6 +580,18 @@ LIMIT 1
 		return
 	}
 
+	if assigneeID.Int64 == authUser.ID || storyData.UserID == authUser.ID {
+		if !authUser.Can([]string{"update_stories_mine"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	} else {
+		if !authUser.Can([]string{"update_stories_others"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	if assigneeID.Valid {
 		storyData.AssigneeID = assigneeID.Int64
 	}
@@ -502,6 +627,12 @@ LIMIT 1
 
 // Show the new / create feature form.
 func (s *storyService) create(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"create_stories"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	parentFeatureID := ps.ByName("feature_id")
 
@@ -576,6 +707,13 @@ LIMIT 1
 
 func (s *storyService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_stories_mine"}) && !authUser.Can([]string{"read_stories_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	story_id := ps.ByName("story_id")
 
 	query := `
@@ -640,11 +778,24 @@ LIMIT 1
 		return
 	}
 
+	if assigneeID.Int64 == authUser.ID || storyData.UserID == authUser.ID {
+		if !authUser.Can([]string{"read_stories_mine"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	} else {
+		if !authUser.Can([]string{"read_stories_others"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	if deleted_at.Valid {
 		storyData.DeletedAt = deleted_at.String
 	}
 
 	if assigneeID.Valid {
+
 		storyData.AssigneeID = assigneeID.Int64
 
 		id := strconv.FormatInt(assigneeID.Int64, 10)
@@ -765,7 +916,57 @@ func (s *storyService) restore(w http.ResponseWriter, r *http.Request, ps httpro
 }
 
 func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
 	story_id := ps.ByName("story_id")
+
+	// ensure we have the correct permissions
+	{
+		storyData := story{}
+
+		stmt, err := s.db.Prepare(`SELECT user_id, assignee_id FROM goissuez.stories WHERE id = $1`)
+
+		if err != nil {
+			s.log.Error("Error stories.destroy.prepare.", err)
+
+			http.Error(w, "Error deleting story.", http.StatusInternalServerError)
+
+			return
+		}
+
+		assignee_id := sql.NullInt64{}
+
+		err = stmt.QueryRow(story_id).Scan(
+			&storyData.UserID,
+			&assignee_id,
+		)
+
+		if err != nil {
+			s.log.Error("Error stories.destroy.scan.", err)
+
+			http.Error(w, "Error deleting story.", http.StatusInternalServerError)
+
+			return
+		}
+
+		if assignee_id.Valid {
+			storyData.AssigneeID = assignee_id.Int64
+		} else {
+			storyData.AssigneeID = 0
+		}
+
+		if storyData.UserID == authUser.ID || storyData.AssigneeID == authUser.ID {
+			if !authUser.Can([]string{"delete_stories_mine"}) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else {
+			if !authUser.Can([]string{"delete_stories_others"}) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+	}
 
 	stmt, err := s.db.Prepare(`UPDATE goissuez.stories SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
 
