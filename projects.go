@@ -34,6 +34,12 @@ func NewProjectService(db *sql.DB, log *logrus.Logger, tpls *template.Template) 
 }
 
 func (s *projectService) index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_projects_mine"}) && !authUser.Can([]string{"read_projects_others"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	query := `
 SELECT
@@ -76,11 +82,12 @@ ORDER BY created_at
 	for rows.Next() {
 
 		projectData := project{}
+		description := sql.NullString{}
 
 		err := rows.Scan(
 			&projectData.ID,
 			&projectData.Name,
-			&projectData.Description,
+			&description,
 			&projectData.UserID,
 			&projectData.CreatedAt,
 			&projectData.UpdatedAt,
@@ -95,10 +102,29 @@ ORDER BY created_at
 			return
 		}
 
+		if description.Valid {
+			projectData.Description = description.String
+		}
+
 		projects = append(projects, projectData)
 	}
 
-	pageData := page{Title: "All Projects", Data: struct{ Projects []project }{projects}}
+	filteredProjectsList := []project{}
+
+	for _, p := range projects {
+		if p.ID == 2 {
+			p.Name = "Admin Demo Project"
+			p.Description = "This project was created by the Demo Admin. It can be edited by the Demo Admin, though changes won't appear to persist."
+		}
+
+		if p.UserID == authUser.ID && authUser.Can([]string{"read_projects_mine"}) {
+			filteredProjectsList = append(filteredProjectsList, p)
+		} else if p.UserID != authUser.ID && authUser.Can([]string{"read_projects_others"}) {
+			filteredProjectsList = append(filteredProjectsList, p)
+		}
+	}
+
+	pageData := page{Title: "All Projects", Data: struct{ Projects []project }{filteredProjectsList}}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 
@@ -118,7 +144,12 @@ ORDER BY created_at
 
 func (s *projectService) store(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	authUser, _ := r.Context().Value("user").(user)
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"create_projects"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	r.ParseForm()
 
@@ -160,8 +191,42 @@ RETURNING id
 }
 
 func (s *projectService) update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
 
 	project_id := ps.ByName("project_id")
+
+	// ensure we have the correct permissions
+	{
+		projectData := project{}
+
+		stmt, err := s.db.Prepare(`SELECT user_id FROM goissuez.projects WHERE id = $1`)
+
+		if err != nil {
+			s.log.Error("Error projects.update.getproject.prepare.", err)
+
+			http.Error(w, "Error updating project.", http.StatusInternalServerError)
+			return
+		}
+
+		err = stmt.QueryRow(project_id).Scan(
+			&projectData.UserID,
+		)
+
+		if err != nil {
+			s.log.Error("Error projects.update.getproject.scan.", err)
+
+			http.Error(w, "Error updating project.", http.StatusInternalServerError)
+			return
+		}
+
+		if projectData.UserID == authUser.ID && !authUser.Can([]string{"update_projects_mine"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		} else if projectData.UserID != authUser.ID && !authUser.Can([]string{"update_projects_others"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
 
 	r.ParseForm()
 
@@ -203,7 +268,43 @@ WHERE id = $1
 }
 
 func (s *projectService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	authUser, _ := auth.getAuthUser(r)
+
 	project_id := ps.ByName("project_id")
+
+	// ensure we have the correct permissions
+	{
+		projectData := project{}
+
+		stmt, err := s.db.Prepare(`SELECT user_id FROM goissuez.projects WHERE id = $1`)
+
+		if err != nil {
+			s.log.Error("Error projects.edit.getproject.prepare.", err)
+
+			http.Error(w, "Error updating project.", http.StatusInternalServerError)
+			return
+		}
+
+		err = stmt.QueryRow(project_id).Scan(
+			&projectData.UserID,
+		)
+
+		if err != nil {
+			s.log.Error("Error projects.edit.getproject.scan.", err)
+
+			http.Error(w, "Error updating project.", http.StatusInternalServerError)
+			return
+		}
+
+		if projectData.UserID == authUser.ID && !authUser.Can([]string{"update_projects_mine"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		} else if projectData.UserID != authUser.ID && !authUser.Can([]string{"update_projects_others"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
 
 	query := `
 SELECT
@@ -230,11 +331,12 @@ LIMIT 1
 	row := stmt.QueryRow(project_id)
 
 	projectData := project{}
+	description := sql.NullString{}
 
 	err = row.Scan(
 		&projectData.ID,
 		&projectData.Name,
-		&projectData.Description,
+		&description,
 		&projectData.UserID,
 	)
 
@@ -244,6 +346,10 @@ LIMIT 1
 		http.Error(w, "Error editing project.", http.StatusInternalServerError)
 
 		return
+	}
+
+	if description.Valid {
+		projectData.Description = description.String
 	}
 
 	pageData := page{Title: "Edit Project", Data: projectData}
@@ -265,9 +371,17 @@ LIMIT 1
 }
 
 func (s *projectService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	authUser, _ := auth.getAuthUser(r)
+
 	project_id := ps.ByName("project_id")
 
 	if project_id == "new" {
+
+		if !authUser.Can([]string{"create_projects"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 
 		pageData := page{Title: "Create Project", Data: nil}
 
@@ -317,11 +431,12 @@ LIMIT 1
 	row := stmt.QueryRow(project_id)
 
 	projectData := project{}
+	description := sql.NullString{}
 
 	err = row.Scan(
 		&projectData.ID,
 		&projectData.Name,
-		&projectData.Description,
+		&description,
 		&projectData.UserID,
 		&projectData.CreatedAt,
 		&projectData.UpdatedAt,
@@ -333,6 +448,34 @@ LIMIT 1
 		http.Error(w, "Error getting project.", http.StatusInternalServerError)
 
 		return
+	}
+
+	if description.Valid {
+		projectData.Description = description.String
+	}
+
+	// hack to ensure demo project description and name doesn't change
+	if projectData.ID == 2 {
+
+		projectData.Name = "Admin Demo Project"
+		projectData.Description = "This project was created by the Demo Admin. It can be edited by the Demo Admin, though changes won't appear to persist."
+	}
+
+	if projectData.UserID == authUser.ID {
+		if !authUser.Can([]string{"read_projects_mine"}) {
+
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+
+			return
+		}
+
+	} else {
+		if !authUser.Can([]string{"read_projects_others"}) {
+
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+
+			return
+		}
 	}
 
 	// Get Features for the Project
@@ -374,11 +517,12 @@ WHERE project_id = $1
 
 	for rows.Next() {
 		featureData := feature{}
+		description := sql.NullString{}
 
 		err := rows.Scan(
 			&featureData.ID,
 			&featureData.Name,
-			&featureData.Description,
+			&description,
 			&featureData.ProjectID,
 			&featureData.UserID,
 			&featureData.CreatedAt,
@@ -392,6 +536,10 @@ WHERE project_id = $1
 			http.Error(w, "Error getting project features.", http.StatusInternalServerError)
 
 			return
+		}
+
+		if description.Valid {
+			featureData.Description = description.String
 		}
 
 		features = append(features, featureData)
@@ -442,7 +590,42 @@ WHERE project_id = $1
 }
 
 func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
 	project_id := ps.ByName("project_id")
+
+	// ensure we have the correct permissions
+	{
+		projectData := project{}
+
+		stmt, err := s.db.Prepare(`SELECT user_id FROM goissuez.projects WHERE id = $1`)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.getproject.prepare.", err)
+
+			http.Error(w, "Error updating project.", http.StatusInternalServerError)
+			return
+		}
+
+		err = stmt.QueryRow(project_id).Scan(
+			&projectData.UserID,
+		)
+
+		if err != nil {
+			s.log.Error("Error projects.destroy.getproject.scan.", err)
+
+			http.Error(w, "Error updating project.", http.StatusInternalServerError)
+			return
+		}
+
+		if projectData.UserID == authUser.ID && !authUser.Can([]string{"delete_projects_mine"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		} else if projectData.UserID != authUser.ID && !authUser.Can([]string{"delete_projects_others"}) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
 
 	tx, err := s.db.BeginTx(context.Background(), nil)
 
