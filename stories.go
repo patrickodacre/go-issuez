@@ -215,6 +215,7 @@ created_at,
 updated_at
 FROM goissuez.stories
 WHERE feature_id = $1
+AND deleted_at IS NULL
 ORDER BY created_at
 `
 	stmt, err = s.db.Prepare(query)
