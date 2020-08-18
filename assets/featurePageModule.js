@@ -32,6 +32,7 @@ export default () => {
     function confirmDelete() {
 
         const urls = {
+            feature: `${env.APP_URL}/features/${context.entity_data.ID}`,
             story: `${env.APP_URL}/stories/${context.entity_data.ID}`,
             bug: `${env.APP_URL}/bugs/${context.entity_data.ID}`,
         }
@@ -45,7 +46,9 @@ export default () => {
 
         axios.delete(url)
             .then(resp => {
-                window.location.href = `${env.APP_URL}/features/${context.entity_data.FeatureID}`
+                const feature_id = context.entity_data.FeatureID || context.entity_data.ID
+
+                window.location.href = `${env.APP_URL}/features/${feature_id}`
             })
             .catch(err => {
                 console.log(err)

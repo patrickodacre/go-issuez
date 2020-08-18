@@ -7,7 +7,9 @@
         <span data-feather="edit"></span>
         Edit
     </a>
-    <button data-project-delete="{{.Data.ID}}" class="btn btn-sm btn-danger">
+    <button data-delete-trigger="feature"
+            data-entity="{{(call $.Funcs.ToJSON .Data )}}"
+            class="btn btn-sm btn-danger">
         <span data-feather="delete"></span>
         Delete
     </button>

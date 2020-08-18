@@ -662,16 +662,20 @@ LIMIT 1
 
 		var storyData story
 		var bugData bug
+		var featureData feature
 		var b []byte
 		var err error
 
 		bugData, bug_ok := data.(bug)
 		storyData, story_ok := data.(story)
+		featureData, feature_ok := data.(feature)
 
 		if bug_ok {
 			b, err = json.Marshal(bugData)
 		} else if story_ok {
 			b, err = json.Marshal(storyData)
+		} else if feature_ok {
+			b, err = json.Marshal(featureData)
 		}
 
 		if err != nil {
