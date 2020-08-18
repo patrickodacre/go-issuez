@@ -203,3 +203,23 @@ func handleFatalError(err error, msg string) {
 		log.Fatal(msg, err)
 	}
 }
+
+func deletedEntityNotice(message string, w http.ResponseWriter, r *http.Request, log *logrus.Logger) {
+	pageData := page{Title: "Deleted Entity", Data: message}
+
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+
+	view := viewService{w: w, r: r}
+	view.make("templates/admin/deleted_entity.gohtml")
+	err := view.exec(mainLayout, pageData)
+
+	if err != nil {
+		log.Error("Error: deletedEntityNotice", err)
+		http.Error(w, "Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	view.send(http.StatusOK)
+	return
+}
