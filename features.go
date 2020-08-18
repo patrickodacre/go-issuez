@@ -35,6 +35,13 @@ func NewFeatureService(db *sql.DB, log *logrus.Logger, tpls *template.Template) 
 }
 
 func (s *featureService) all(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_features"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	features := []struct {
 		Feature     feature
 		RelatedData struct {
@@ -144,6 +151,13 @@ ORDER BY f.updated_at
 // First, we'll get the project details, and then
 // we'll query the related features separately.
 func (s *featureService) index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_features"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	projectData := project{}
 
 	parentProjectID := ps.ByName("project_id")
@@ -251,8 +265,12 @@ ORDER BY f.created_at
 
 // Save a project feature.
 func (s *featureService) store(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
 
-	authUser, _ := r.Context().Value("user").(user)
+	if !authUser.Can([]string{"create_features"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	project_id := ps.ByName("project_id")
 
@@ -292,6 +310,12 @@ RETURNING id
 
 // Update a project feature.
 func (s *featureService) update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"update_features"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	feature_id := ps.ByName("feature_id")
 
@@ -337,6 +361,13 @@ RETURNING project_id
 
 // Show the edit feature form.
 func (s *featureService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"update_features"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	feature_id := ps.ByName("feature_id")
 
 	stmt, err := s.db.Prepare(`
@@ -405,6 +436,12 @@ LIMIT 1
 
 // Show the new / create feature form.
 func (s *featureService) create(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"create_features"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	parentProjectID := ps.ByName("project_id")
 
@@ -471,6 +508,12 @@ LIMIT 1
 }
 
 func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"read_features"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	feature_id := ps.ByName("feature_id")
 	stories := []story{}
@@ -713,6 +756,13 @@ LIMIT 1
 }
 
 func (s *featureService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"delete_features"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	feature_id := ps.ByName("feature_id")
 
 	stmt, err := s.db.Prepare(`UPDATE goissuez.features SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`)
