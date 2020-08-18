@@ -168,7 +168,7 @@ func (s *featureService) index(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	sql := `
+	stmt, err = s.db.Prepare(`
 SELECT f.id,
 f.name,
 f.description,
@@ -179,8 +179,7 @@ f.updated_at
 FROM goissuez.features f
 WHERE f.project_id = $1
 ORDER BY f.created_at
-`
-	stmt, err = s.db.Prepare(sql)
+`)
 
 	if err != nil {
 
@@ -260,13 +259,12 @@ func (s *featureService) store(w http.ResponseWriter, r *http.Request, ps httpro
 	featureName := r.PostForm.Get("name")
 	featureDescription := r.PostForm.Get("description")
 
-	sql := `
+	stmt, err := s.db.Prepare(`
 INSERT INTO goissuez.features
 (name, description, project_id, user_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 RETURNING id
-`
-	stmt, err := s.db.Prepare(sql)
+`)
 
 	if err != nil {
 		s.log.Error("Error features.store.prepare.", err)
@@ -301,14 +299,12 @@ func (s *featureService) update(w http.ResponseWriter, r *http.Request, ps httpr
 	featureDescription := r.PostForm.Get("description")
 
 	// return the project_id so we can redirect back to the project / features page
-	sql := `
+	stmt, err := s.db.Prepare(`
 UPDATE goissuez.features
 SET name = $2, description = $3, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING project_id
-`
-
-	stmt, err := s.db.Prepare(sql)
+`)
 
 	if err != nil {
 		s.log.Error("Error features.update.prepare.", err)
@@ -341,7 +337,7 @@ RETURNING project_id
 func (s *featureService) edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	feature_id := ps.ByName("feature_id")
 
-	sql := `
+	stmt, err := s.db.Prepare(`
 SELECT
 id,
 name,
@@ -353,9 +349,7 @@ updated_at
 FROM goissuez.features
 WHERE id = $1
 LIMIT 1
-`
-
-	stmt, err := s.db.Prepare(sql)
+`)
 
 	if err != nil {
 		s.log.Error("Error features.edit.prepare.", err)
@@ -412,7 +406,7 @@ func (s *featureService) create(w http.ResponseWriter, r *http.Request, ps httpr
 
 	parentProjectID := ps.ByName("project_id")
 
-	sql := `
+	stmt, err := s.db.Prepare(`
 SELECT
 id,
 name,
@@ -423,9 +417,7 @@ updated_at
 FROM goissuez.projects
 WHERE id = $1
 LIMIT 1
-`
-
-	stmt, err := s.db.Prepare(sql)
+`)
 
 	if err != nil {
 		s.log.Error("Error features.create.prepare.", err)
@@ -482,7 +474,7 @@ func (s *featureService) show(w http.ResponseWriter, r *http.Request, ps httprou
 	stories := []story{}
 	bugs := []bug{}
 
-	sql := `
+	stmt, err := s.db.Prepare(`
 SELECT
 f.id,
 f.name,
@@ -497,9 +489,7 @@ JOIN goissuez.projects p
 ON p.id = f.project_id
 WHERE f.id = $1
 LIMIT 1
-`
-
-	stmt, err := s.db.Prepare(sql)
+`)
 
 	if err != nil {
 		s.log.Error("Error features.show.prepare.", err)
