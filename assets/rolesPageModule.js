@@ -46,6 +46,7 @@ export default () => {
                 window.location.href = `${env.APP_URL}/admin/roles`
             })
             .catch(err => {
+                alert(err.message)
                 console.log(err)
             })
     }

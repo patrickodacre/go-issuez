@@ -51,6 +51,7 @@ export default () => {
                 window.location.href = `${env.APP_URL}/features/${feature_id}`
             })
             .catch(err => {
+                alert(err.message)
                 console.log(err)
             })
     }

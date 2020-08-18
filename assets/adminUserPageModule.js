@@ -67,6 +67,7 @@ export default () => {
                 window.location.href = `${env.APP_URL}/admin/users`
             })
             .catch(err => {
+                alert(err.message)
                 console.log(err)
             })
     }
