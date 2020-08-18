@@ -534,7 +534,7 @@ LIMIT 1
 		return
 	}
 
-	// get the stories for the project
+	// get the stories for the feature
 	{
 		stmt, err := s.db.Prepare(`
 			SELECT
@@ -545,6 +545,7 @@ LIMIT 1
 			updated_at
 			FROM goissuez.stories
 			WHERE feature_id = $1
+			AND deleted_at IS NULL
 		`)
 
 		if err != nil {
@@ -594,7 +595,7 @@ LIMIT 1
 		featureData.Stories = stories
 	}
 
-	// get the bugs for the project
+	// get the bugs for the feature
 	{
 		stmt, err := s.db.Prepare(`
 			SELECT
@@ -605,6 +606,7 @@ LIMIT 1
 			updated_at
 			FROM goissuez.bugs
 			WHERE feature_id = $1
+			AND deleted_at IS NULL
 		`)
 
 		if err != nil {
