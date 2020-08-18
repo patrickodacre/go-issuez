@@ -53,7 +53,7 @@
                 <div class="sidebar-sticky pt-3">
                     {{if .IsLoggedIn}}
                     <ul class="nav flex-column">
-                    {{if .CanAdmin}}
+                    {{if or .IsAdmin .CanAdmin}}
                         <li class="nav-item" >
                             <a class="nav-link" href="/admin">
                             <span data-feather="sliders"></span>
