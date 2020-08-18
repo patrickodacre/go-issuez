@@ -60,6 +60,7 @@ LEFT JOIN goissuez.bugs b
 ON f.id = b.feature_id
 JOIN goissuez.projects p
 ON p.id = f.project_id
+WHERE f.deleted_at IS NULL
 GROUP BY f.id, p.id
 ORDER BY f.updated_at
 `)
