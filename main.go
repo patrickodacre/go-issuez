@@ -143,7 +143,7 @@ func main() {
 
 	// Bugs
 	router.GET("/bugs", auth.guard(bugs.all))
-	router.GET("/features/:feature_id/bugs", auth.guard(bugs.index))
+	router.GET("/features/:feature_id/bugs", auth.guard(bugs.featureBugs))
 	router.POST("/features/:feature_id/bugs", auth.guard(bugs.store))
 
 	router.GET("/features/:feature_id/bugs/new", auth.guard(bugs.create))

@@ -158,7 +158,7 @@ ORDER BY b.updated_at
 	view.send(http.StatusOK)
 }
 
-func (s *bugService) index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (s *bugService) featureBugs(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	featureData := feature{}
 
