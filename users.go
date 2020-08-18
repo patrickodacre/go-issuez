@@ -387,7 +387,7 @@ func (s *userService) features(w http.ResponseWriter, r *http.Request, ps httpro
 	authUser, _ := auth.getAuthUser(r)
 
 	// a feature should be considered "MINE" if that user is involved with them somehow
-	if !authUser.Can([]string{"read_users", "read_features_mine"}) {
+	if !authUser.Can([]string{"read_features"}) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -544,7 +544,7 @@ WHERE id = ANY($1)
 func (s *userService) stories(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	authUser, _ := auth.getAuthUser(r)
 
-	if !authUser.Can([]string{"read_users", "read_stories_mine"}) {
+	if !authUser.Can([]string{"read_stories_mine"}) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -647,7 +647,7 @@ ORDER BY updated_at
 func (s *userService) bugs(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	authUser, _ := auth.getAuthUser(r)
 
-	if !authUser.Can([]string{"read_users", "read_bugs_mine"}) {
+	if !authUser.Can([]string{"read_bugs_mine"}) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
