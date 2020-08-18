@@ -26,10 +26,17 @@
                 <span data-feather="edit"></span>
                 Edit
             </a>
+            {{if eq .Data.DeletedAt ""}}
             <button data-story-delete="{{(call .Funcs.ToJSON .Data)}}" class="btn btn-sm btn-danger">
                 <span data-feather="delete"></span>
                 Delete
             </button>
+            {{else}}
+            <a a href="/stories/{{.Data.ID}}/restore" class="btn btn-sm btn-success">
+                <span data-feather="plus"></span>
+                Restore
+            </a>
+            {{end}}
         </div>
     </div>
 </div>

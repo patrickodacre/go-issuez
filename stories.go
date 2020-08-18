@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"context"
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 )
@@ -691,6 +692,76 @@ LIMIT 1
 	}
 
 	view.send(http.StatusOK)
+}
+
+func (s *storyService) restore(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	story_id := ps.ByName("story_id")
+	storyData := story{}
+
+	tx, err := s.db.BeginTx(context.Background(), nil)
+
+	if err != nil {
+		s.log.Error("Error stories.restore.begintx.", err)
+
+		http.Error(w, "Error restoring story.", http.StatusInternalServerError)
+
+		return
+	}
+
+	// restore the story
+	{
+		stmt, err := tx.Prepare(`UPDATE goissuez.stories SET deleted_at = NULL WHERE id = $1 RETURNING feature_id`)
+
+		if err != nil {
+			s.log.Error("Error stories.restore.prepare.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error restoring story.", http.StatusInternalServerError)
+			return
+		}
+
+		err = stmt.QueryRow(story_id).Scan(
+			&storyData.FeatureID,
+		)
+
+		if err != nil {
+			s.log.Error("Error stories.restore.scan.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error restoring story.", http.StatusInternalServerError)
+			return
+		}
+
+	}
+
+	// restore feature
+	{
+		stmt, err := tx.Prepare(`UPDATE goissuez.features SET deleted_at = NULL where id = $1`)
+
+		if err != nil {
+			s.log.Error("Error stories.restore.featurerestore.prepare.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error restoring story.", http.StatusInternalServerError)
+			return
+		}
+
+		_, err = stmt.Exec(storyData.FeatureID)
+
+		if err != nil {
+			s.log.Error("Error stories.restore.featurerestore.exec.", err)
+
+			tx.Rollback()
+			http.Error(w, "Error restoring story.", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	tx.Commit()
+
+	feature_id := strconv.FormatInt(storyData.FeatureID, 10)
+	http.Redirect(w, r, "/features/"+feature_id, http.StatusSeeOther)
 }
 
 func (s *storyService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

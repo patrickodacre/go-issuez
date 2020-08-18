@@ -136,6 +136,7 @@ func main() {
 
 	router.GET("/features/:feature_id/stories/new", auth.guard(stories.create))
 	router.GET("/stories/:story_id/edit", auth.guard(stories.edit))
+	router.GET("/stories/:story_id/restore", auth.guard(stories.restore))
 	router.POST("/stories/:story_id/update", auth.guard(stories.update))
 	router.GET("/stories/:story_id", auth.guard(stories.show))
 	router.DELETE("/stories/:story_id", auth.guard(stories.destroy))
