@@ -52,6 +52,7 @@ f.name as feature_name
 FROM goissuez.stories s
 JOIN goissuez.features f
 ON f.id = s.feature_id
+WHERE s.deleted_at IS NULL
 ORDER BY s.updated_at
 `)
 
