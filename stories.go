@@ -162,7 +162,7 @@ ORDER BY s.updated_at
 // Show all stories for a given feature.
 // First, we'll get the feature details, and then
 // we'll query the related stories separately.
-func (s *storyService) index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (s *storyService) featureStories(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	featureData := feature{}
 
 	parentFeatureID := ps.ByName("feature_id")

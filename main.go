@@ -131,7 +131,7 @@ func main() {
 
 	// Stories
 	router.GET("/stories", auth.guard(stories.all))
-	router.GET("/features/:feature_id/stories", auth.guard(stories.index))
+	router.GET("/features/:feature_id/stories", auth.guard(stories.featureStories))
 	router.POST("/features/:feature_id/stories", auth.guard(stories.store))
 
 	router.GET("/features/:feature_id/stories/new", auth.guard(stories.create))
