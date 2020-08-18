@@ -478,7 +478,8 @@ func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps http
 		}
 	}
 
-	// Features
+	// Compile a list of features that we'll be deleting.
+	// we'll need to reference this list of ids to delete associated bugs and stories.
 	feature_ids := []int64{}
 	{
 		// first save all feature IDs to make handling stories and bugs easier
@@ -521,9 +522,11 @@ func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps http
 
 			feature_ids = append(feature_ids, id)
 		}
+	}
 
-		// DELETE Features
-		stmt, err = tx.Prepare(`UPDATE goissuez.features SET deleted_at = CURRENT_TIMESTAMP WHERE project_id = $1`)
+	// DELETE Features
+	{
+		stmt, err := tx.Prepare(`UPDATE goissuez.features SET deleted_at = CURRENT_TIMESTAMP WHERE project_id = $1`)
 
 		if err != nil {
 			s.log.Error("Error projects.destroy.delete.features.prepare.", err)
@@ -544,10 +547,23 @@ func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps http
 			http.Error(w, "Error deleting project.", http.StatusInternalServerError)
 			return
 		}
+
 	}
 
-	// DELETE Stories associted with the features deleted
+	// create a string of feature ids we can reference to delete associated bugs and stories.
+	// why not just use postgres to cascade these changes? b/c we're using soft-deletes.
 	var deleted_feature_ids string
+	{
+		feature_id_strings := []string{}
+
+		for _, v := range feature_ids {
+			feature_id_strings = append(feature_id_strings, strconv.FormatInt(v, 10))
+		}
+
+		deleted_feature_ids = strings.Join(feature_id_strings, ", ")
+	}
+
+	// DELETE stories
 	{
 		stmt, err := tx.Prepare(`UPDATE goissuez.stories SET deleted_at = CURRENT_TIMESTAMP WHERE feature_id IN ($1)`)
 
@@ -560,14 +576,6 @@ func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps http
 		}
 
 		defer stmt.Close()
-
-		feature_id_strings := []string{}
-
-		for _, v := range feature_ids {
-			feature_id_strings = append(feature_id_strings, strconv.FormatInt(v, 10))
-		}
-
-		deleted_feature_ids = strings.Join(feature_id_strings, ", ")
 
 		_, err = stmt.Exec(deleted_feature_ids)
 
@@ -609,5 +617,4 @@ func (s *projectService) destroy(w http.ResponseWriter, r *http.Request, ps http
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Success"))
 }
