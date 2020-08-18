@@ -67,7 +67,7 @@ func (s *adminService) users(w http.ResponseWriter, r *http.Request, _ httproute
 
 	authUser, _ := auth.getAuthUser(r)
 
-	if !authUser.IsAdmin && !authUser.Can([]string{"admin_read_users"}) {
+	if !authUser.IsAdmin && !authUser.Can([]string{"read_users"}) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -887,7 +887,7 @@ func (s *adminService) destroyRole(w http.ResponseWriter, r *http.Request, ps ht
 func (s *adminService) setUserRole(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	authUser, _ := auth.getAuthUser(r)
 
-	if !authUser.IsAdmin && !authUser.Can([]string{"admin_update_users"}) {
+	if !authUser.IsAdmin && !authUser.Can([]string{"update_users"}) {
 
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
