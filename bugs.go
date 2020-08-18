@@ -164,7 +164,7 @@ func (s *bugService) featureBugs(w http.ResponseWriter, r *http.Request, ps http
 
 	parentFeatureID := ps.ByName("feature_id")
 
-	stmt, err := s.db.Prepare(`SELECT id, name, description, project_id FROM goissuez.features WHERE id = $1`)
+	stmt, err := s.db.Prepare(`SELECT id, name, description, project_id FROM goissuez.features WHERE id = $1 AND deleted_at IS NULL`)
 
 	if err != nil {
 		s.log.Error("Error bugs.index.prepare.feature.", err)
