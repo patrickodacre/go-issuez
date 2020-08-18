@@ -241,7 +241,14 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 
 func (s *userService) show(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-	user_id := ps.ByName("id")
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"admin_read_users"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user_id := ps.ByName("user_id")
 
 	// TODO: get user by id:
 	stmt, e1 := s.db.Prepare(`select * from goissuez.users where id = $1 limit 1`)
@@ -292,6 +299,13 @@ func (s *userService) show(w http.ResponseWriter, r *http.Request, ps httprouter
 }
 
 func (s *userService) projects(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"admin_read_users", "read_projects_mine"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	user_id := ps.ByName("user_id")
 
@@ -369,6 +383,15 @@ WHERE user_id = $1
 // A user is involved in a feature if they are assigned
 // to either a story or a bug associated with that feature.
 func (s *userService) features(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	authUser, _ := auth.getAuthUser(r)
+
+	// a feature should be considered "MINE" if that user is involved with them somehow
+	if !authUser.Can([]string{"admin_read_users", "read_features_mine"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	user_id := ps.ByName("user_id")
 	feature_ids := []int64{}
 	features := []feature{}
@@ -519,6 +542,12 @@ WHERE id = ANY($1)
 }
 
 func (s *userService) stories(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"admin_read_users", "read_stories_mine"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	user_id := ps.ByName("user_id")
 	stories := []story{}
@@ -616,6 +645,12 @@ ORDER BY updated_at
 }
 
 func (s *userService) bugs(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"admin_read_users", "read_bugs_mine"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	user_id := ps.ByName("user_id")
 	bugs := []bug{}
@@ -737,6 +772,13 @@ func (s *userService) dashboard(w http.ResponseWriter, r *http.Request, _ httpro
 
 // destory user SOFT DELETES a user by just adding a deleted_at field.
 func (s *userService) destroy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	authUser, _ := auth.getAuthUser(r)
+
+	if !authUser.Can([]string{"admin_delete_users"}) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	user_id := ps.ByName("user_id")
 
