@@ -49,6 +49,7 @@ export default () => {
                 window.location.href = `${env.APP_URL}/projects`
             })
             .catch(err => {
+                alert(err.message)
                 console.log(err)
             })
     }
