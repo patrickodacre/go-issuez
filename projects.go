@@ -44,6 +44,7 @@ user_id,
 created_at,
 updated_at
 FROM goissuez.projects
+WHERE deleted_at IS NULL
 ORDER BY created_at
 `
 	stmt, err := s.db.Prepare(query)
