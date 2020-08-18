@@ -436,8 +436,8 @@ LIMIT 1
 	if err := row.Scan(
 		&userData.ID,
 		&userData.Name,
-		&userData.Email,
 		&userData.Username,
+		&userData.Email,
 		&userData.CreatedAt,
 		&userData.UpdatedAt,
 		&userData.LastLogin,
