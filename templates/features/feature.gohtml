@@ -31,31 +31,29 @@
                 </a>
             </div>
         </div>
-        <div class="card-body">
-            <ul class="list-group list-group-flush">
-                {{range $k, $story := .Data.Stories}}
-                    <li class="list-group-item with-actions">
-                        <a href="/stories/{{$story.ID}}">{{$story.Name}} {{if $story.Description}} - {{$story.Description}}{{end}}</a>
-                        <div class="actions">
-                            <a href="/stories/{{$story.ID}}/edit" class="btn btn-sm btn-outline-primary">
-                                <span data-feather="edit"></span>
-                                Edit
-                            </a>
+        <ul class="list-group list-group-flush">
+            {{range $k, $story := .Data.Stories}}
+                <li class="list-group-item with-actions">
+                    <a href="/stories/{{$story.ID}}">{{$story.Name}} {{if $story.Description}} - {{$story.Description}}{{end}}</a>
+                    <div class="actions">
+                        <a href="/stories/{{$story.ID}}/edit" class="btn btn-sm btn-outline-primary">
+                            <span data-feather="edit"></span>
+                            Edit
+                        </a>
 
-                            <button type="button"
-                                    class="btn btn-sm btn-danger"
-                                    data-delete-trigger="story"
-                                    data-entity="{{(call $.Funcs.ToJSON $story)}}"
-                            >
-                                <span data-feather="delete"></span>
-                                Delete
-                            </button>
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-delete-trigger="story"
+                                data-entity="{{(call $.Funcs.ToJSON $story)}}"
+                        >
+                            <span data-feather="delete"></span>
+                            Delete
+                        </button>
 
-                        </div>
-                    </li>
-                {{end}}
-            </ul>
-        </div>
+                    </div>
+                </li>
+            {{end}}
+        </ul>
     </div>
 </div>
 
@@ -70,31 +68,29 @@
                 </a>
             </div>
         </div>
-        <div class="card-body">
-            <ul class="list-group list-group-flush">
-                {{range $k, $bug := .Data.Bugs}}
-                    <li class="list-group-item with-actions">
-                        <a href="/bugs/{{$bug.ID}}">{{$bug.Name}} - {{$bug.Description}}</a>
-                        <div class="actions">
-                            <a href="/bugs/{{$bug.ID}}/edit" class="btn btn-sm btn-outline-primary">
-                                <span data-feather="edit"></span>
-                                Edit
-                            </a>
+        <ul class="list-group list-group-flush">
+            {{range $k, $bug := .Data.Bugs}}
+                <li class="list-group-item with-actions">
+                    <a href="/bugs/{{$bug.ID}}">{{$bug.Name}} - {{$bug.Description}}</a>
+                    <div class="actions">
+                        <a href="/bugs/{{$bug.ID}}/edit" class="btn btn-sm btn-outline-primary">
+                            <span data-feather="edit"></span>
+                            Edit
+                        </a>
 
-                            <button type="button"
-                                    class="btn btn-sm btn-danger"
-                                    data-delete-trigger="bug"
-                                    data-entity="{{(call $.Funcs.ToJSON $bug)}}"
-                            >
-                                <span data-feather="delete"></span>
-                                Delete
-                            </button>
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-delete-trigger="bug"
+                                data-entity="{{(call $.Funcs.ToJSON $bug)}}"
+                        >
+                            <span data-feather="delete"></span>
+                            Delete
+                        </button>
 
-                        </div>
-                    </li>
-                {{end}}
-            </ul>
-        </div>
+                    </div>
+                </li>
+            {{end}}
+        </ul>
     </div>
 </div>
 
