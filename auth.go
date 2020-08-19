@@ -469,6 +469,7 @@ LIMIT 1
 	}
 
 	userData.IsAdmin = roleID.Valid && roleID.Int64 == ADMIN
+	userData.CanAdmin = userData.Can([]string{"admin"})
 
 	return userData, true
 }

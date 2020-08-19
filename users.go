@@ -32,6 +32,7 @@ type user struct {
 	LastLogin   string
 	DeletedAt   string
 	IsAdmin     bool
+	CanAdmin    bool
 	RoleID      int64
 	Role        role
 	Permissions map[string]capability
