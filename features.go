@@ -356,7 +356,7 @@ RETURNING project_id
 		return
 	}
 
-	http.Redirect(w, r, "/projects/"+project_id+"/features", http.StatusSeeOther)
+	http.Redirect(w, r, "/projects/"+project_id, http.StatusSeeOther)
 }
 
 // Show the edit feature form.
