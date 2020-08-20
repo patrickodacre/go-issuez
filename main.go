@@ -31,6 +31,7 @@ var bufpool *bpool.BufferPool
 
 const (
 	ADMIN = 1
+	GUEST = 2
 )
 
 func init() {

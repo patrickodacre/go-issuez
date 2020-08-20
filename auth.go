@@ -177,9 +177,10 @@ func (s *authService) registerUser(w http.ResponseWriter, r *http.Request, _ htt
 
 	s.log.Error("Creating user: ", name, email, password, username, photoPathToSave)
 
+	// default to GUEST role
 	stmt, err := s.db.Prepare(`
-INSERT into goissuez.users (name, email, password, username, photo_url, created_at, updated_at, last_login )
-VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id
+INSERT into goissuez.users (name, email, password, username, photo_url, role_id, created_at, updated_at, last_login )
+VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id
 `)
 
 	if handleError(err, "Failed to prepare statement.") {
@@ -194,7 +195,7 @@ VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMEST
 		id int64
 	)
 
-	err = stmt.QueryRow(name, email, password, username, photoPathToSave).Scan(&id)
+	err = stmt.QueryRow(name, email, password, username, photoPathToSave, GUEST).Scan(&id)
 
 	if handleError(err, "Failed to query row.") {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
